@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/*
+ * Dark premium palette: warm orange as the dominant action/highlight color,
+ * violet used sparingly for accents (school names, the "master" level tag,
+ * the footer gradient). No light mode.
+ */
+:root {
+  --background: #0b0e16;
+  --foreground: #e6e8ee;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: #ff6a18;
+  --color-accent-dark: #e25500;
+  --color-accent-peach: #ffc9a6;
+  --color-violet: #9c4dff;
+  --color-pink: #fb5cc0;
+  --color-muted: #a2a6b3;
+  --color-line: #2a2f3d;
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-poppins);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

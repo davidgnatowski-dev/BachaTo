@@ -1,0 +1,146 @@
+import type { ClassRow } from "./types";
+import { toLocalIsoDate } from "./format";
+
+export const DAY_LABELS = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
+
+/**
+ * Co-taught classes store both names in one field ("Ola, Darek" or "Ola &
+ * Darek" depending on the school). Split into individual instructor names so
+ * picking one person surfaces both her solo classes and every class she
+ * co-teaches, regardless of who the partner is.
+ */
+export function splitInstructors(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\s*,\s*|\s+&\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** 1 = Monday ... 7 = Sunday, derived from dayOfWeek or specificDate. */
+export function displayDayOfWeek(row: ClassRow): number | undefined {
+  if (row.dayOfWeek) return row.dayOfWeek;
+  if (row.specificDate) {
+    const jsDay = new Date(`${row.specificDate}T00:00:00`).getDay(); // 0=Sun..6=Sat
+    return ((jsDay + 6) % 7) + 1;
+  }
+  return undefined;
+}
+
+export interface UpcomingClass {
+  row: ClassRow;
+  when: Date;
+  label: string;
+}
+
+/**
+ * Soonest-first upcoming occurrences, computed from `now`: dated classes use
+ * their specific date directly, recurring weekly classes are projected
+ * forward to the next matching weekday (this week if it hasn't started yet,
+ * otherwise next week).
+ */
+export function nextOccurrences(rows: ClassRow[], now: Date, count: number): UpcomingClass[] {
+  const todayIso = toLocalIsoDate(now);
+  const todayWeekday = ((now.getDay() + 6) % 7) + 1; // 1=Mon..7=Sun
+
+  const withDates: UpcomingClass[] = [];
+  for (const row of rows) {
+    const time = row.startTime ?? "00:00";
+    let dateIso: string;
+    if (row.specificDate) {
+      dateIso = row.specificDate;
+      if (dateIso === todayIso && time < now.toTimeString().slice(0, 5)) continue; // already passed today
+    } else if (row.dayOfWeek) {
+      let daysAhead = (row.dayOfWeek - todayWeekday + 7) % 7;
+      if (daysAhead === 0 && time < now.toTimeString().slice(0, 5)) daysAhead = 7;
+      const d = new Date(now);
+      d.setDate(d.getDate() + daysAhead);
+      dateIso = toLocalIsoDate(d);
+    } else {
+      continue;
+    }
+
+    const when = new Date(`${dateIso}T${time}:00`);
+    const diffDays = Math.round((when.getTime() - new Date(`${todayIso}T00:00:00`).getTime()) / 86400000);
+    const label = diffDays === 0 ? "Dzisiaj" : diffDays === 1 ? "Jutro" : DAY_LABELS[((when.getDay() + 6) % 7)];
+
+    withDates.push({ row, when, label });
+  }
+
+  withDates.sort((a, b) => a.when.getTime() - b.when.getTime());
+  return withDates.slice(0, count);
+}
+
+export function groupByDay(rows: ClassRow[]): Map<number, ClassRow[]> {
+  const groups = new Map<number, ClassRow[]>();
+  for (const row of rows) {
+    const day = displayDayOfWeek(row);
+    if (!day) continue;
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day)!.push(row);
+  }
+  for (const list of groups.values()) {
+    list.sort((a, b) => (a.startTime ?? "").localeCompare(b.startTime ?? ""));
+  }
+  return groups;
+}
+
+/** Polish plural forms for "zajęcie" (class/session): 1 / 2-4 / 5+. */
+export function pluralizeClasses(n: number): string {
+  if (n === 1) return "zajęcie";
+  const lastDigit = n % 10;
+  const lastTwo = n % 100;
+  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "zajęcia";
+  return "zajęć";
+}
+
+/** "55 min" / "1 godz." / "1 godz. 25 min" from start/end times, or undefined if either is missing. */
+export function formatDuration(startTime?: string, endTime?: string): string | undefined {
+  if (!startTime || !endTime) return undefined;
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  const diff = eh * 60 + em - (sh * 60 + sm);
+  if (diff <= 0) return undefined;
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  if (hours === 0) return `${minutes} min`;
+  if (minutes === 0) return `${hours} godz.`;
+  return `${hours} godz. ${minutes} min`;
+}
+
+export function formatDatePl(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+/**
+ * Card chrome is uniform (neutral dark surface, thin neutral border) per the
+ * design system; violet is reserved for the school name text as a sparing
+ * secondary accent rather than a per-school hue.
+ */
+export function schoolStyle() {
+  return { bg: "bg-zinc-900", text: "text-violet" };
+}
+
+/**
+ * Full studio addresses, verified directly against each school's own
+ * contact page. The scraped `location` field is often just a short label
+ * (or, for Warsaw Salsa Club, sometimes a status like "ZAJĘCIA ODWOŁANE"
+ * instead of a room name), so it's matched loosely and falls back to the
+ * school's primary address rather than trusting it verbatim.
+ */
+export function schoolAddress(school: string, location?: string): string | undefined {
+  const loc = (location ?? "").toLowerCase();
+  if (school === "Abra Studio") {
+    if (loc.includes("długa")) return "ul. Długa 44/50 (wejście od ul. Bohaterów Getta), 00-241 Warszawa";
+    return "al. Jana Pawła II 11, 00-823 Warszawa";
+  }
+  if (school === "Salsa Libre") {
+    if (loc.includes("chłodna") || loc.includes("wszechświata")) {
+      return "ul. Chłodna 29 (wejście od ul. Krochmalnej), Warszawa";
+    }
+    return "ul. Żelazna 59, 00-848 Warszawa";
+  }
+  if (school === "Warsaw Salsa Club") return "ul. Nowowiejska 37B, 02-010 Warszawa";
+  return undefined;
+}

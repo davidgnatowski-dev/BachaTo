@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Uruchamia `npm run scrape` codziennie o 6:00 rano.
+
+  Instalacja (nikt tego nie robi za Ciebie automatycznie):
+    1. Uzupełnij poniżej WorkingDirectory i ścieżkę do npm (sprawdź: `which npm`).
+    2. Skopiuj plik:
+         cp scripts/com.bachataschedule.scrape.plist.example ~/Library/LaunchAgents/com.bachataschedule.scrape.plist
+    3. Włącz:
+         launchctl load ~/Library/LaunchAgents/com.bachataschedule.scrape.plist
+    4. Sprawdź logi w data/scrape.log
+
+  Wyłączenie:
+    launchctl unload ~/Library/LaunchAgents/com.bachataschedule.scrape.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.bachataschedule.scrape</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/npm</string>
+    <string>run</string>
+    <string>scrape</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/dawid/Aplikacja</string>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dawid/Aplikacja/data/scrape.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/dawid/Aplikacja/data/scrape.log</string>
+</dict>
+</plist>
