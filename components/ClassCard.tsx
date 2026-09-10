@@ -10,6 +10,7 @@ import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { PinIcon, PersonIcon } from "@/components/icons";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
+import { LevelDot } from "@/components/LevelDot";
 import { useFavorites } from "@/lib/favorites";
 
 export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[] }) {
@@ -45,7 +46,10 @@ export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[]
           {row.startTime ?? "?"}
           {row.endTime ? ` – ${row.endTime}` : ""}
         </span>
-        <p className="mt-1 pr-16 font-heading text-sm font-semibold leading-snug text-zinc-50">{row.title}</p>
+        <p className="mt-1 pr-16 font-heading text-sm font-semibold leading-snug text-zinc-50">
+          <LevelDot level={row.level} className="mr-1.5 align-middle" />
+          {row.title}
+        </p>
         <p className={`mt-0.5 text-xs font-medium ${style.text}`}>
           <Link href={`/szkoly/${encodeURIComponent(row.school)}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
             {row.school}

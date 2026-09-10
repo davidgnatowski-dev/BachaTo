@@ -10,6 +10,7 @@ import { attendanceKey, useActivity } from "@/lib/activity";
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
 import { computeBadges, DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
 import { BadgesGrid } from "@/components/BadgesGrid";
+import { LevelDot } from "@/components/LevelDot";
 import { eventHref, eventProgramFavoriteId } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
 import { nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
@@ -653,6 +654,7 @@ function PlanClassRow({ item, liked, onLike, onRemove, onOpenClass }: { item: Pl
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
+          <LevelDot level={item.level} className="align-middle" />
           {item.href ? <Link href={item.href} className="truncate text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base">{item.title}</Link> : item.row ? <button type="button" onClick={() => onOpenClass(item.row!)} className="truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base" aria-label={`Otwórz szczegóły zajęć ${item.title}`}>{item.title}</button> : <p className="truncate text-sm font-semibold text-zinc-100 sm:text-base">{item.title}</p>}
           {item.level && <span className="rounded-full border border-violet/40 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet">{item.level}</span>}
         </div>

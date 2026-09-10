@@ -6,6 +6,7 @@ import type { ClassRow } from "@/lib/types";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
+import { LevelDot } from "@/components/LevelDot";
 import { useFavorites } from "@/lib/favorites";
 import { schoolTextClass } from "@/lib/schedule";
 
@@ -42,7 +43,10 @@ export function UpcomingClassList({ items, allRows }: { items: UpcomingClass[]; 
                 <p className="text-[11px] text-muted/70">{label}</p>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-foreground sm:text-base">{row.title}</p>
+                <p className="truncate text-sm font-semibold text-foreground sm:text-base">
+                  <LevelDot level={row.level} className="mr-1.5 align-middle" />
+                  {row.title}
+                </p>
                 <p className="truncate text-xs text-muted/70">
                   <span className={schoolTextClass(row.school)}>{row.school}</span>
                   {row.instructor ? ` · ${row.instructor}` : ""}

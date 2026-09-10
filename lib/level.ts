@@ -68,6 +68,25 @@ const LEVEL_STYLES: Record<LevelBucket, { bg: string; text: string; ring: string
   unknown: { bg: "bg-zinc-800/40", text: "text-zinc-400", ring: "ring-zinc-700/60" },
 };
 
+/**
+ * Solid fill colour per tier — for the small level dot shown next to a class
+ * time/name. Brighter and more saturated than LEVEL_STYLES (which are muted
+ * tints for pill backgrounds).
+ */
+const LEVEL_DOT_CLASS: Record<LevelBucket, string> = {
+  starter: "bg-green-400",
+  elementary: "bg-sky-400",
+  intermediate: "bg-amber-400",
+  advanced: "bg-red-400",
+  master: "bg-violet-400",
+  open: "bg-indigo-400",
+  unknown: "bg-zinc-500",
+};
+
+export function levelDotClass(bucket: LevelBucket) {
+  return LEVEL_DOT_CLASS[bucket];
+}
+
 /** Small icon per level tier, matching the design system's "Tagi poziomów". */
 export const LEVEL_BUCKET_ICONS: Record<LevelBucket, string> = {
   starter: "🌱",

@@ -12,9 +12,9 @@ import { CompactClassRow } from "@/components/CompactClassRow";
 import {
   classifyLevel,
   levelStyle,
+  levelDotClass,
   LEVEL_BUCKET_ORDER,
   LEVEL_BUCKET_LABELS,
-  LEVEL_BUCKET_ICONS,
   type LevelBucket,
 } from "@/lib/level";
 
@@ -385,7 +385,7 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted">Poziomy:</span>
+        <span className="text-xs text-muted">Poziom (kropka przy nazwie):</span>
         {levels.map((b) => {
           const colors = levelStyle(b);
           const active = level === b;
@@ -394,11 +394,11 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
               key={b}
               type="button"
               onClick={() => updateParam("level", active ? ALL : b)}
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity hover:opacity-80 ${colors.bg} ${colors.text} ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity hover:opacity-80 ${colors.bg} ${colors.text} ${
                 active ? `${colors.ring} ring-2` : colors.ring
               }`}
             >
-              <span aria-hidden="true">{LEVEL_BUCKET_ICONS[b]}</span>
+              <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${levelDotClass(b)}`} />
               {LEVEL_BUCKET_LABELS[b]}
             </button>
           );

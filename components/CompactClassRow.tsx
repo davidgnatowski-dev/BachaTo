@@ -9,6 +9,7 @@ import { FORMAT_LABELS, formatStyle } from "@/lib/format";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
+import { LevelDot } from "@/components/LevelDot";
 import { useFavorites } from "@/lib/favorites";
 
 /**
@@ -46,7 +47,10 @@ export function CompactClassRow({ row, allRows }: { row: ClassRow; allRows: Clas
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate font-heading text-sm font-semibold text-zinc-50 sm:text-[15px]">{row.title}</p>
+          <p className="truncate font-heading text-sm font-semibold text-zinc-50 sm:text-[15px]">
+            <LevelDot level={row.level} className="mr-1.5 align-middle" />
+            {row.title}
+          </p>
           <p className="truncate text-xs text-muted">
             <Link
               href={`/szkoly/${encodeURIComponent(row.school)}`}
