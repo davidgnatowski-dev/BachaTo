@@ -4,19 +4,29 @@ import Link from "next/link";
 import { useActivity } from "@/lib/activity";
 import { useFavorites } from "@/lib/favorites";
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
+import { weekStreak } from "@/lib/badges";
 import { classifyLevel, levelStyle, LEVEL_BUCKET_ICONS } from "@/lib/level";
 import { ActivityList } from "@/components/ActivityList";
+import { SummaryNarrative } from "@/components/SummaryNarrative";
 
 /** Logged-out equivalent of the server-rendered AccountStats — same layout, sourced from this browser's localStorage. */
 export function LocalStatsSummary() {
   const { entries } = useActivity();
   const { likedClassIds, likedEventIds, plannedClassIds, plannedEventIds } = useFavorites();
-  const stats = computeActivityStats(confirmedActivityOnly(entries));
+  const confirmed = confirmedActivityOnly(entries);
+  const stats = computeActivityStats(confirmed);
   const levelBucket = stats.favoriteLevel ? classifyLevel(stats.favoriteLevel) : undefined;
   const levelColors = levelBucket ? levelStyle(levelBucket) : undefined;
 
   return (
     <div className="flex flex-col gap-6">
+      <SummaryNarrative
+        totalActivities={stats.totalClasses}
+        totalHours={stats.totalHours}
+        favoriteInstructor={stats.favoriteInstructor}
+        favoriteSchool={stats.favoriteSchool}
+        streak={weekStreak(confirmed.map((e) => e.dateIso))}
+      />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: "Godziny tańca", value: stats.totalHours },

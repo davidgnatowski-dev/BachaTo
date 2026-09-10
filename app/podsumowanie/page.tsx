@@ -4,6 +4,7 @@ import { getRecentPlannedEvents, getUserActivity, getUserEventActivity, getUserE
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
 import { computeBadges, weekStreak, DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
 import { BadgesGrid } from "@/components/BadgesGrid";
+import { SummaryNarrative } from "@/components/SummaryNarrative";
 import { CATEGORY_LABELS, eventHref, isDancePracticeEvent } from "@/lib/events";
 import { classifyLevel, levelStyle, LEVEL_BUCKET_ICONS } from "@/lib/level";
 import { Header } from "@/components/Header";
@@ -99,14 +100,16 @@ function AccountStats({ userId }: { userId: number }) {
   const festivalAndTripCount = eventActivity.filter((entry) => entry.category === "festival" || entry.category === "trip").length;
   const eventCities = new Set(eventActivity.map((entry) => entry.city).filter(Boolean)).size;
 
-  // --- Badges + this-month + weekly goal ---
+  // --- Narrative + badges + this-month + weekly goal ---
   const activityDates = activity.map((entry) => entry.dateIso);
+  const streak = weekStreak(activityDates);
+  const lifetimeHours = Math.round((stats.totalHours + workshopHours) * 10) / 10;
   const badges = computeBadges({
     activityDates,
-    totalHours: Math.round((stats.totalHours + workshopHours) * 10) / 10,
+    totalHours: lifetimeHours,
     schoolCount: new Set(activity.map((entry) => entry.school).filter(Boolean)).size,
     eventCount: eventActivity.length,
-    streak: weekStreak(activityDates),
+    streak,
   });
   const now = new Date();
   const monthPrefix = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -119,6 +122,14 @@ function AccountStats({ userId }: { userId: number }) {
   return (
     <div className="flex flex-col gap-6">
       <YearSummaryCard year={year} classes={yearStats.totalClasses} hours={Math.round((yearStats.totalHours + workshopHoursYear) * 10) / 10} events={eventActivityYear.length} practice={practiceCountYear} school={yearStats.favoriteSchool} instructor={yearStats.favoriteInstructor} style={yearStats.favoriteDanceStyle} />
+
+      <SummaryNarrative
+        totalActivities={stats.totalClasses}
+        totalHours={lifetimeHours}
+        favoriteInstructor={stats.favoriteInstructor}
+        favoriteSchool={stats.favoriteSchool}
+        streak={streak}
+      />
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted">Łącznie w historii</p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
