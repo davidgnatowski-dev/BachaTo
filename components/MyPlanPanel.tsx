@@ -7,6 +7,7 @@ import type { ClassRow, EventRow } from "@/lib/types";
 import { DAY_LABELS, nextOccurrences, schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { useFavorites } from "@/lib/favorites";
 import { PlusButton } from "@/components/PlusButton";
+import { LevelBadge } from "@/components/LevelDot";
 
 interface PlanItem {
   key: string;
@@ -110,11 +111,7 @@ export function MyPlanPanel({ schedule, events }: { schedule: ClassRow[]; events
                   item.sublabel && <p className="truncate text-xs text-muted">{item.sublabel}</p>
                 )}
               </div>
-              {item.level && (
-                <span className="shrink-0 rounded-full border border-violet/50 px-1.5 py-0.5 text-[10px] font-semibold text-violet">
-                  {item.level}
-                </span>
-              )}
+              <LevelBadge level={item.level} className="shrink-0" />
               <PlusButton active onToggle={item.onRemove} />
             </div>
           ))}

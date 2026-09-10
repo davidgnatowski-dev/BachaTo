@@ -10,7 +10,7 @@ import { attendanceKey, useActivity } from "@/lib/activity";
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
 import { computeBadges, DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
 import { BadgesGrid } from "@/components/BadgesGrid";
-import { LevelDot } from "@/components/LevelDot";
+import { LevelDot, LevelBadge } from "@/components/LevelDot";
 import { eventHref, eventProgramFavoriteId } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
 import { nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
@@ -656,7 +656,7 @@ function PlanClassRow({ item, liked, onLike, onRemove, onOpenClass }: { item: Pl
         <div className="flex flex-wrap items-center gap-2">
           <LevelDot level={item.level} className="align-middle" />
           {item.href ? <Link href={item.href} className="truncate text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base">{item.title}</Link> : item.row ? <button type="button" onClick={() => onOpenClass(item.row!)} className="truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base" aria-label={`Otwórz szczegóły zajęć ${item.title}`}>{item.title}</button> : <p className="truncate text-sm font-semibold text-zinc-100 sm:text-base">{item.title}</p>}
-          {item.level && <span className="rounded-full border border-violet/40 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet">{item.level}</span>}
+          <LevelBadge level={item.level} />
         </div>
         <p className="mt-1 truncate text-xs text-muted">
           {item.school && <span className={schoolTextClass(item.school)}>{item.school}</span>}
@@ -785,7 +785,7 @@ function FavoriteClassesSection({ favorites, plannedClassIds, onPlan, onLike, no
                     <p className="mt-0.5 truncate text-xs text-muted"><span className={schoolTextClass(row.school)}>{row.school}</span>{row.instructor ? ` · ${row.instructor}` : ""}</p>
                     <button type="button" onClick={() => onOpenClass(row)} className="mt-1 text-[11px] font-semibold text-violet hover:text-accent">Szczegóły zajęć →</button>
                   </div>
-                  {row.level && <span className="hidden rounded-full border border-violet/40 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet md:inline-flex">{row.level}</span>}
+                  <LevelBadge level={row.level} className="hidden md:inline-flex" />
                   <div className="ml-16 flex basis-[calc(100%-4rem)] items-center gap-2 sm:ml-0 sm:basis-auto">
                     <PlusButton active={plannedClassIds.has(id)} onToggle={() => onPlan(id)} label="Dodaj do planu" className="!border-accent/40 !text-accent hover:!border-accent" />
                     <HeartButton active onToggle={() => onLike(id)} />
@@ -887,7 +887,7 @@ function RecommendedClassesSection({ recommendations, activeFilter, onFilter, pl
                 <div className="w-16 shrink-0"><p className="text-xs font-semibold text-accent">{formatDayLabel(when, now)}</p><p className="font-heading text-base font-semibold tabular-nums text-zinc-100">{row.startTime}</p></div>
                 <div className="min-w-0 flex-[1_1_calc(100%-5rem)] sm:flex-1"><button type="button" onClick={() => onOpenClass(row)} className="block max-w-full truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent" aria-label={`Otwórz szczegóły zajęć ${row.title}`}>{row.title}</button><p className="mt-0.5 truncate text-xs text-muted"><span className={schoolTextClass(row.school)}>{row.school}</span>{row.instructor ? ` · ${row.instructor}` : ""}</p><button type="button" onClick={() => onOpenClass(row)} className="mt-1 text-[11px] font-semibold text-violet hover:text-accent">Szczegóły zajęć →</button></div>
                 <div className="ml-16 flex basis-[calc(100%-4rem)] items-center gap-2 sm:ml-0 sm:basis-auto">
-                  {row.level && <span className="hidden rounded-full border border-violet/40 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold text-violet md:inline-flex">{row.level}</span>}
+                  <LevelBadge level={row.level} className="hidden md:inline-flex" />
                   {activeFilter === "level" && <span className="hidden rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 xl:inline-flex">Pasuje do poziomu</span>}
                   {activeFilter === "for-you" && matchReason && <span className="hidden rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-300 xl:inline-flex">{matchReason}</span>}
                   <PlusButton active={plannedClassIds.has(id)} onToggle={() => onPlan(id)} label="Dodaj do planu" className="!border-accent/40 !text-accent hover:!border-accent" />

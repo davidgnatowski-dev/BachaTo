@@ -73,9 +73,11 @@ const LEVEL_STYLES: Record<LevelBucket, { bg: string; text: string; ring: string
  * time/name. Brighter and more saturated than LEVEL_STYLES (which are muted
  * tints for pill backgrounds).
  */
+// Vivid -400 shade of the same hue family used by LEVEL_STYLES pills, so the
+// dot and the written level tag always read as the same colour.
 const LEVEL_DOT_CLASS: Record<LevelBucket, string> = {
   starter: "bg-green-400",
-  elementary: "bg-sky-400",
+  elementary: "bg-blue-400",
   intermediate: "bg-amber-400",
   advanced: "bg-red-400",
   master: "bg-violet-400",

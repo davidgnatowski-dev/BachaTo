@@ -8,6 +8,7 @@ import { useFavorites } from "@/lib/favorites";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
 import { AddToPlanModal } from "@/components/AddToPlanModal";
+import { LevelDot, LevelBadge } from "@/components/LevelDot";
 import { PersonIcon } from "@/components/icons";
 
 const VIEWS = [
@@ -82,7 +83,10 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
                   <p className="text-[11px] text-muted">{label}</p>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-100">{row.title}</p>
+                  <p className="truncate text-sm font-medium text-zinc-100">
+                    <LevelDot level={row.level} className="mr-1.5 align-middle" />
+                    {row.title}
+                  </p>
                   <p className="truncate text-xs text-muted">
                     <Link href={`/szkoly/${encodeURIComponent(row.school)}`} className={`${schoolTextClass(row.school)} hover:underline`}>
                       {row.school}
@@ -107,15 +111,7 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
                     ))}
                   </span>
                 )}
-                {row.level && (
-                  <span
-                    className={`shrink-0 rounded-full border border-violet/50 px-1.5 py-0.5 text-[10px] font-semibold text-violet ${
-                      loggedIn ? "hidden sm:inline-block" : "inline-block"
-                    }`}
-                  >
-                    {row.level}
-                  </span>
-                )}
+                <LevelBadge level={row.level} className={`shrink-0 ${loggedIn ? "hidden sm:inline-flex" : ""}`} />
                 <div className="flex shrink-0 items-center gap-1.5">
                   {loggedIn ? (
                     <PlusButton active={plannedClassIds.has(favoriteId)} onToggle={() => togglePlanClass(favoriteId)} />
