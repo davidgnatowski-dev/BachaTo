@@ -134,6 +134,21 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     endDate: "2026-11-29",
     sourceUrl: "https://worldbachatameetup.com/competition-registration/",
   },
+  {
+    externalId: "wroclove-bachata-cup-2026-12",
+    category: "competition",
+    title: "WrocLove Bachata Cup · 4th WrocLove Bachata Festival",
+    city: "Wrocław",
+    organizer: "WrocLove Bachata Festival",
+    coverImage: "/events/comp-wroclove.jpg",
+    description:
+      "4. edycja WrocLove Bachata Festival (11–13.12) stawia w całości na rywalizację — zamiast Jack & Jill powstaje pełne mistrzostwo bachaty z wieloma kategoriami, rozgrywane głównie w ciągu dnia. " +
+      "Kategorie: Social Competition, Social Competition Bachata Dominicana, Bachata Solo, Bachata Solo Choreography, Bachata Couple Choreography, Bachata Team Choreography, Bachata Influence — w podziale na Amateur i Pro. " +
+      "Zapisy i regulamin: biuroflydance@gmail.com / wroclovebachatafestival.com.",
+    startDate: "2026-12-11",
+    endDate: "2026-12-13",
+    sourceUrl: "https://www.wroclovebachatafestival.com/",
+  },
 ];
 
 function nextOccurrences(dayOfWeek: number, count: number): string[] {
