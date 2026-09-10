@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { getStats } from "@/lib/db";
+import { AuthenticatedAppShell } from "@/components/dashboard/AuthenticatedAppShell";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background font-sans text-foreground" suppressHydrationWarning>
-        <div className="flex-1">{children}</div>
+        <div className="flex-1"><AuthenticatedAppShell>{children}</AuthenticatedAppShell></div>
         <Footer stats={stats} />
       </body>
     </html>

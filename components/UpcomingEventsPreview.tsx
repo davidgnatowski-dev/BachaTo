@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { EventRow } from "@/lib/types";
 import { EventCard } from "@/components/EventCard";
 
-export function UpcomingEventsPreview({ events }: { events: EventRow[] }) {
+export function UpcomingEventsPreview({ events, onRequireAuth }: { events: EventRow[]; onRequireAuth?: () => void }) {
   const top = events.slice(0, 4);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -41,7 +41,7 @@ export function UpcomingEventsPreview({ events }: { events: EventRow[] }) {
       >
         {top.map((row) => (
           <div key={`${row.source}-${row.id}`} className="w-64 shrink-0 snap-start sm:w-72">
-            <EventCard row={row} />
+            <EventCard row={row} onRequireAuth={onRequireAuth} />
           </div>
         ))}
       </div>

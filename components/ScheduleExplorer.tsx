@@ -3,8 +3,10 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ClassFormat, ClassRow, School } from "@/lib/types";
-import { DAY_LABELS, displayDayOfWeek, groupByDay, pluralizeClasses, splitInstructors } from "@/lib/schedule";
+import { hasUserPreferences, matchesUserPreferences, type UserPreferences } from "@/lib/preferences";
+import { DAY_LABELS, displayDayOfWeek, groupByDay, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { toLocalIsoDate } from "@/lib/format";
+import { SCHOOL_NAMES } from "@/lib/schools";
 import { ClassCard } from "@/components/ClassCard";
 import { CompactClassRow } from "@/components/CompactClassRow";
 import {
@@ -15,10 +17,8 @@ import {
   LEVEL_BUCKET_ICONS,
   type LevelBucket,
 } from "@/lib/level";
-import { FORMAT_LABELS } from "@/lib/format";
 
 const ALL = "all";
-const FORMAT_ORDER: ClassFormat[] = ["partner", "solo", "unknown"];
 
 const SELECT_CLASS =
   "rounded-full border border-line bg-black/40 px-3 py-1.5 text-sm text-zinc-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
@@ -96,7 +96,7 @@ function daysForFilter(dayFilter: string): number[] {
  * near the top of the page and this component, further down, stay in sync
  * without prop-drilling shared state through everything in between.
  */
-export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
+export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; preferences?: UserPreferences }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -106,11 +106,12 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
   const dayFilter = searchParams.get("day") ?? "week";
   const school = searchParams.get("school") ?? ALL;
   const level = searchParams.get("level") ?? ALL;
+  const format = searchParams.get("format") ?? ALL;
+  const instructor = searchParams.get("instructor") ?? ALL;
   const query = searchParams.get("q") ?? "";
+  const preferenceOnly = searchParams.get("mine") === "1" && Boolean(preferences && hasUserPreferences(preferences));
 
   const [view, setView] = useState<ViewMode>("lista");
-  const [instructor, setInstructor] = useState<string>(ALL);
-  const [format, setFormat] = useState<string>(ALL);
   const [timeFrom, setTimeFrom] = useState<string>("");
   const [timeTo, setTimeTo] = useState<string>("");
   const [showMore, setShowMore] = useState(false);
@@ -125,10 +126,7 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
-  const schools = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.school))).sort((a, b) => a.localeCompare(b, "pl")),
-    [rows]
-  );
+  const schools = SCHOOL_NAMES;
 
   const instructors = useMemo(
     () => Array.from(new Set(rows.flatMap((r) => splitInstructors(r.instructor)))).sort((a, b) => a.localeCompare(b, "pl")),
@@ -138,11 +136,6 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
   const levels = useMemo(() => {
     const present = new Set(rows.map((r) => classifyLevel(r.level)));
     return LEVEL_BUCKET_ORDER.filter((b) => present.has(b));
-  }, [rows]);
-
-  const formats = useMemo(() => {
-    const present = new Set(rows.map((r) => r.format));
-    return FORMAT_ORDER.filter((f) => present.has(f));
   }, [rows]);
 
   const activeDays = useMemo(() => daysForFilter(dayFilter), [dayFilter]);
@@ -160,9 +153,10 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
       if (timeFrom && (!r.startTime || r.startTime < timeFrom)) return false;
       if (timeTo && (!r.startTime || r.startTime > timeTo)) return false;
       if (q && !`${r.title} ${r.instructor ?? ""} ${r.school}`.toLowerCase().includes(q)) return false;
+      if (preferenceOnly && preferences && !matchesUserPreferences(r, preferences)) return false;
       return true;
     });
-  }, [rows, school, instructor, level, format, activeDays, timeFrom, timeTo, query]);
+  }, [rows, school, instructor, level, format, activeDays, timeFrom, timeTo, query, preferenceOnly, preferences]);
 
   const formatCounts = useMemo(() => {
     const counts: Record<ClassFormat, number> = { partner: 0, solo: 0, unknown: 0 };
@@ -184,7 +178,16 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
 
   const groups = groupByDay(filtered);
   const hasActiveFilters =
-    school !== ALL || instructor !== ALL || level !== ALL || format !== ALL || dayFilter !== "week" || timeFrom !== "" || timeTo !== "" || query !== "";
+    school !== ALL ||
+    instructor !== ALL ||
+    level !== ALL ||
+    format !== ALL ||
+    dayFilter !== "week" ||
+    timeFrom !== "" ||
+    timeTo !== "" ||
+    query !== "" ||
+    preferenceOnly;
+  const hasSavedPreferences = Boolean(preferences && hasUserPreferences(preferences));
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -196,11 +199,10 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
   }, [showMore, hasActiveFilters]);
 
   function resetFilters() {
-    setInstructor(ALL);
-    setFormat(ALL);
     setTimeFrom("");
     setTimeTo("");
-    router.push(pathname, { scroll: false });
+    setShowMore(false);
+    router.replace(pathname, { scroll: false });
   }
 
   const specificDayValue = /^[1-7]$/.test(dayFilter) ? dayFilter : ALL;
@@ -232,6 +234,17 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
         className="sticky top-0 z-20 -mx-4 flex flex-col gap-3 border-b border-line bg-background/95 px-4 py-3 shadow-lg shadow-black/40 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4"
       >
         <div className="flex flex-wrap items-center gap-2">
+          {hasSavedPreferences && (
+            <button
+              type="button"
+              onClick={() => updateParam("mine", preferenceOnly ? "" : "1")}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                preferenceOnly ? "border border-violet bg-violet/15 text-violet" : "border border-line text-zinc-300 hover:border-violet/60 hover:text-violet"
+              }`}
+            >
+              {preferenceOnly ? "✓ Zgodne z moimi preferencjami" : "Moje preferencje"}
+            </button>
+          )}
           {QUICK_RANGES.map((range) => {
             const active = dayFilter === range.key;
             return (
@@ -257,7 +270,7 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
             ))}
           </select>
 
-          <select value={school} onChange={(e) => updateParam("school", e.target.value)} className={SELECT_CLASS}>
+          <select value={school} onChange={(e) => updateParam("school", e.target.value)} className={`${SELECT_CLASS} ${school === ALL ? "" : schoolTextClass(school)}`}>
             <option value={ALL}>Szkoła</option>
             {schools.map((s) => (
               <option key={s} value={s}>
@@ -266,7 +279,13 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
             ))}
           </select>
 
-          <select value={instructor} onChange={(e) => setInstructor(e.target.value)} className={SELECT_CLASS}>
+          <select value={format} onChange={(e) => updateParam("format", e.target.value)} className={SELECT_CLASS}>
+            <option value={ALL}>Format</option>
+            <option value="partner">W parach</option>
+            <option value="solo">Solo</option>
+          </select>
+
+          <select value={instructor} onChange={(e) => updateParam("instructor", e.target.value)} className={SELECT_CLASS}>
             <option value={ALL}>Instruktor</option>
             {instructors.map((i) => (
               <option key={i} value={i}>
@@ -284,8 +303,12 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
           </button>
 
           {hasActiveFilters && (
-            <button onClick={resetFilters} className="rounded-full px-2 py-1.5 text-xs font-medium text-accent hover:text-accent-peach">
-              Wyczyść filtry
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-full border border-accent/50 bg-accent/10 px-3.5 py-1.5 text-sm font-semibold text-accent hover:border-accent hover:bg-accent/15"
+            >
+              ✕ Wyczyść wszystko
             </button>
           )}
 
@@ -335,17 +358,6 @@ export function ScheduleExplorer({ rows }: { rows: ClassRow[] }) {
 
         {showMore && (
           <div className="flex flex-wrap items-end gap-3 border-t border-line pt-3">
-            <label className="flex flex-col gap-1 text-xs text-muted">
-              Format
-              <select value={format} onChange={(e) => setFormat(e.target.value)} className={SELECT_CLASS}>
-                <option value={ALL}>Wszystkie</option>
-                {formats.map((f) => (
-                  <option key={f} value={f}>
-                    {FORMAT_LABELS[f]}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="flex flex-col gap-1 text-xs text-muted">
               Godzina od
               <input type="time" value={timeFrom} onChange={(e) => setTimeFrom(e.target.value)} className={SELECT_CLASS} />

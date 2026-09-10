@@ -113,13 +113,18 @@ export function formatDatePl(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
-/**
- * Card chrome is uniform (neutral dark surface, thin neutral border) per the
- * design system; violet is reserved for the school name text as a sparing
- * secondary accent rather than a per-school hue.
- */
-export function schoolStyle() {
-  return { bg: "bg-zinc-900", text: "text-violet" };
+/** A stable color identity for each Warsaw school, reused wherever its name is shown. */
+export function schoolTextClass(school?: string | null): string {
+  if (school === "Salsa Libre") return "text-red-400";
+  if (school === "Warsaw Salsa Club") return "text-emerald-400";
+  if (school === "Abra Studio") return "text-amber-300";
+  if (school === "Oye!") return "text-sky-400";
+  if (school === "Viva Cuba") return "text-fuchsia-400";
+  return "text-violet";
+}
+
+export function schoolStyle(school?: string | null) {
+  return { bg: "bg-zinc-900", text: schoolTextClass(school) };
 }
 
 /**
@@ -142,5 +147,7 @@ export function schoolAddress(school: string, location?: string): string | undef
     return "ul. Żelazna 59, 00-848 Warszawa";
   }
   if (school === "Warsaw Salsa Club") return "ul. Nowowiejska 37B, 02-010 Warszawa";
+  if (school === "Oye!") return "ul. Kłopotowskiego 5, Warszawa";
+  if (school === "Viva Cuba") return "ul. Marszałkowska 115 (wejście od ul. Przechodniej), Warszawa";
   return undefined;
 }

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ClassRow, EventRow } from "@/lib/types";
-import { DAY_LABELS, nextOccurrences, splitInstructors } from "@/lib/schedule";
+import { DAY_LABELS, nextOccurrences, schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { useFavorites } from "@/lib/favorites";
 import { PlusButton } from "@/components/PlusButton";
 
@@ -89,7 +89,7 @@ export function MyPlanPanel({ schedule, events }: { schedule: ClassRow[]; events
                 <p className="truncate text-sm font-medium text-zinc-100">{item.title}</p>
                 {item.school ? (
                   <p className="truncate text-xs text-muted">
-                    <Link href={`/szkoly/${encodeURIComponent(item.school)}`} className="hover:underline">
+                    <Link href={`/szkoly/${encodeURIComponent(item.school)}`} className={`${schoolTextClass(item.school)} hover:underline`}>
                       {item.school}
                     </Link>
                     {item.instructorNames && item.instructorNames.length > 0 && (

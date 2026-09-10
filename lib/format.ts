@@ -14,6 +14,15 @@ export function toLocalIsoDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * How stale a scraped-data timestamp is — for the data-freshness banner.
+ * Keeps the `Date.now()` call out of component render code.
+ */
+export function scrapeFreshness(iso: string, staleAfterHours = 72): { relative: string; stale: boolean } {
+  const ageHours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  return { relative: formatRelative(iso), stale: ageHours >= staleAfterHours };
+}
+
 /** "5 min temu" / "3 godz. temu" / "2 dni temu" — used for "ostatnia aktualizacja" labels. */
 export function formatRelative(iso: string | undefined): string {
   if (!iso) return "nigdy";
@@ -48,17 +57,37 @@ export function formatStyle(format: ClassFormat) {
  * "typ zajęć" field, an icon caption, or — as a last resort — the class
  * title itself). Solo/ladies-only wording is explicit almost everywhere
  * these dance schools use it, so we only classify "solo" on a positive
- * match and otherwise fall back to the given default.
+ * match and otherwise fall back to `instructorCount` (partner-work classes
+ * are always co-taught by a leading + a following instructor to demonstrate
+ * both roles; solo/styling/technique classes are taught by one person —
+ * confirmed against real school schedules), then the given default.
  */
-export function classifyFormatFromText(raw: string | undefined | null, fallback: ClassFormat = "unknown"): ClassFormat {
-  if (!raw) return fallback;
-  const s = raw.toLowerCase();
+export function classifyFormatFromText(
+  raw: string | undefined | null,
+  fallback: ClassFormat = "unknown",
+  instructorCount?: number
+): ClassFormat {
+  if (raw) {
+    const s = raw.toLowerCase();
 
-  if (s.includes("solo") || s.includes("ladies styling") || s.includes("for ladies") || s.includes("dla pań")) {
-    return "solo";
+    if (
+      s.includes("solo") ||
+      s.includes("ladies styling") ||
+      s.includes("lady styling") ||
+      s.includes("men's style") ||
+      s.includes("men’s style") ||
+      s.includes("men style") ||
+      s.includes("men styling") ||
+      s.includes("for ladies") ||
+      s.includes("dla pań")
+    ) {
+      return "solo";
+    }
+    if (s.includes("w parach") || s.includes("para") || s.includes("pary") || s.includes("duo")) {
+      return "partner";
+    }
   }
-  if (s.includes("w parach") || s.includes("para") || s.includes("pary") || s.includes("duo")) {
-    return "partner";
-  }
+  if (instructorCount === 1) return "solo";
+  if (instructorCount != null && instructorCount >= 2) return "partner";
   return fallback;
 }

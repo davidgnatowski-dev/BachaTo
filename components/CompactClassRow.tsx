@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ClassRow } from "@/lib/types";
-import { splitInstructors } from "@/lib/schedule";
+import { schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { classifyLevel, levelStyle } from "@/lib/level";
 import { FORMAT_LABELS, formatStyle } from "@/lib/format";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
@@ -51,7 +51,7 @@ export function CompactClassRow({ row, allRows }: { row: ClassRow; allRows: Clas
             <Link
               href={`/szkoly/${encodeURIComponent(row.school)}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-violet hover:underline"
+              className={`${schoolTextClass(row.school)} hover:underline`}
             >
               {row.school}
             </Link>

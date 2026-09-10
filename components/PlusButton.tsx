@@ -2,19 +2,30 @@
 
 import { PlusIcon, CheckIcon } from "@/components/icons";
 
-/** With `label`, renders as a legible text pill ("+ Dodaj do planu") instead of an icon-only circle. */
+/**
+ * With `label`, renders as a legible text pill ("+ Dodaj do planu") instead
+ * of an icon-only circle. `tooltip`/`activeTooltip` let a caller use more
+ * specific wording (e.g. "Dodaj do mojego grafiku" for classes) while every
+ * other call site keeps the default "planu" wording — the `title` attribute
+ * doubles as the native desktop tooltip and the accessible label.
+ */
 export function PlusButton({
   active,
   onToggle,
   className,
   label,
+  tooltip = "Dodaj do mojego planu",
+  activeTooltip = "Usuń z mojego planu",
 }: {
   active: boolean;
   onToggle: () => void;
   className?: string;
   label?: string;
+  tooltip?: string;
+  activeTooltip?: string;
 }) {
   const icon = active ? <CheckIcon className="h-3.5 w-3.5" /> : <PlusIcon className="h-3.5 w-3.5" />;
+  const text = active ? activeTooltip : tooltip;
 
   if (label) {
     return (
@@ -24,7 +35,8 @@ export function PlusButton({
           e.stopPropagation();
           onToggle();
         }}
-        aria-label={active ? "Usuń z mojego planu" : "Dodaj do mojego planu"}
+        aria-label={text}
+        title={text}
         aria-pressed={active}
         className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
           active
@@ -45,7 +57,8 @@ export function PlusButton({
         e.stopPropagation();
         onToggle();
       }}
-      aria-label={active ? "Usuń z mojego planu" : "Dodaj do mojego planu"}
+      aria-label={text}
+      title={text}
       aria-pressed={active}
       className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
         active

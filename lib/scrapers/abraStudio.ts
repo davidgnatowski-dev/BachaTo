@@ -10,6 +10,7 @@ const PAGES = [
 ];
 
 const TEAM_PAGE_URL = "https://abra-studio.pl/abra-team/";
+const ABOUT_PAGE_URL = "https://abra-studio.pl/o-nas/";
 
 const DAY_CODE_TO_NUMBER: Record<string, number> = {
   pon: 1,
@@ -30,9 +31,16 @@ async function fetchPage(url: string): Promise<string> {
   return res.text();
 }
 
-function extractStartTime(rawTimeText: string): string | undefined {
-  const match = rawTimeText.trim().match(/(\d{1,2}:\d{2})\s*$/);
-  return match ? match[1] : undefined;
+/**
+ * The grafik page renders this as "17:00 – 18:00 · 60 min" (an icon,
+ * range, then duration) — pull the first two HH:MM values wherever they
+ * fall in the string rather than anchoring to the end, since that end-of-
+ * string anchor is exactly what silently broke start-time extraction when
+ * the site added the end time and duration suffix.
+ */
+function extractTimes(rawTimeText: string): { startTime?: string; endTime?: string } {
+  const matches = rawTimeText.match(/\d{1,2}:\d{2}/g);
+  return { startTime: matches?.[0], endTime: matches?.[1] };
 }
 
 /**
@@ -41,25 +49,47 @@ function extractStartTime(rawTimeText: string): string | undefined {
  * the name), but the team roster at /abra-team/ does have a profile photo
  * per instructor. Used as a lighter-weight stand-in for a bio.
  */
-async function fetchInstructorPhotos(): Promise<Map<string, string>> {
-  const photos = new Map<string, string>();
-  try {
-    const html = await fetchPage(TEAM_PAGE_URL);
-    const $ = cheerio.load(html);
+interface InstructorSourceProfile {
+  bio?: string;
+  photoUrl?: string;
+  profileUrl: string;
+}
+
+async function fetchInstructorProfiles(): Promise<Map<string, InstructorSourceProfile>> {
+  const profiles = new Map<string, InstructorSourceProfile>();
+  const [teamPage, aboutPage] = await Promise.allSettled([fetchPage(TEAM_PAGE_URL), fetchPage(ABOUT_PAGE_URL)]);
+
+  if (teamPage.status === "fulfilled") {
+    const $ = cheerio.load(teamPage.value);
     $(".abra-team-card").each((_, el) => {
       const name = $(el).find(".abra-team-name").first().text().trim();
-      const src = $(el).find(".abra-team-photo-img").first().attr("src");
-      if (name && src) photos.set(name, src);
+      const photoUrl = $(el).find(".abra-team-photo-img").first().attr("src");
+      if (name) profiles.set(name, { photoUrl, profileUrl: TEAM_PAGE_URL });
     });
-  } catch {
-    // Team page structure changed or is unreachable — schedule scraping still succeeds without photos.
   }
-  return photos;
+
+  if (aboutPage.status === "fulfilled") {
+    const $ = cheerio.load(aboutPage.value);
+    $("article.about-team-card").each((_, el) => {
+      const name = $(el).find(".about-team-overlay span").first().text().trim();
+      const bio = htmlToPlainText($(el).find(".about-team-overlay p").first().html());
+      const photoUrl = $(el).find("img.about-team-image").first().attr("src");
+      if (!name) return;
+      profiles.set(name, {
+        ...profiles.get(name),
+        bio: bio || profiles.get(name)?.bio,
+        photoUrl: photoUrl || profiles.get(name)?.photoUrl,
+        profileUrl: ABOUT_PAGE_URL,
+      });
+    });
+  }
+
+  return profiles;
 }
 
 export async function scrapeAbraStudio(): Promise<ScrapedClass[]> {
   const results: ScrapedClass[] = [];
-  const photos = await fetchInstructorPhotos();
+  const profiles = await fetchInstructorProfiles();
 
   for (const url of PAGES) {
     const html = await fetchPage(url);
@@ -82,7 +112,7 @@ export async function scrapeAbraStudio(): Promise<ScrapedClass[]> {
       if (!danceStyle.toLowerCase().startsWith("bachata")) return;
 
       const title = row.find(".grafik-class-name").text().trim();
-      const startTime = extractStartTime(row.find(".grafik-class-time").text());
+      const { startTime, endTime } = extractTimes(row.find(".grafik-class-time").text());
       const instructor = row
         .find(".grafik-meta-col")
         .filter((_, c) => $(c).find(".grafik-meta-label").text().trim() === "PROWADZĄCY")
@@ -106,9 +136,13 @@ export async function scrapeAbraStudio(): Promise<ScrapedClass[]> {
       const description = htmlToPlainText(row.find(".grafik-class-panel-inner").first().html());
 
       const instructorPhotos: Record<string, string> = {};
+      const instructorBios: Record<string, string> = {};
+      const instructorProfileUrls: Record<string, string> = {};
       for (const name of splitInstructors(instructor)) {
-        const src = photos.get(name);
-        if (src) instructorPhotos[name] = src;
+        const profile = profiles.get(name);
+        if (profile?.photoUrl) instructorPhotos[name] = profile.photoUrl;
+        if (profile?.bio) instructorBios[name] = profile.bio;
+        if (profile?.profileUrl) instructorProfileUrls[name] = profile.profileUrl;
       }
 
       results.push({
@@ -116,13 +150,16 @@ export async function scrapeAbraStudio(): Promise<ScrapedClass[]> {
         title,
         danceStyle,
         level: level || undefined,
-        format: classifyFormatFromText(classType, "unknown"),
+        format: classifyFormatFromText(classType, "unknown", splitInstructors(instructor).length),
         instructor: instructor || undefined,
+        instructorBios: Object.keys(instructorBios).length > 0 ? instructorBios : undefined,
         instructorPhotos: Object.keys(instructorPhotos).length > 0 ? instructorPhotos : undefined,
+        instructorProfileUrls: Object.keys(instructorProfileUrls).length > 0 ? instructorProfileUrls : undefined,
         location,
         description,
         dayOfWeek,
         startTime,
+        endTime,
         sourceUrl: url,
       });
     });

@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { InstructorProfile } from "@/lib/db";
 import { PersonIcon } from "@/components/icons";
-import { pluralizeClasses } from "@/lib/schedule";
+import { pluralizeClasses, schoolTextClass } from "@/lib/schedule";
 
 export function InstructorCard({ instructor }: { instructor: InstructorProfile }) {
+  const summary = instructor.bio ?? [
+    instructor.styles.length > 0 ? `Prowadzi: ${instructor.styles.slice(0, 3).join(", ")}.` : undefined,
+    instructor.levels.length > 0 ? `Poziomy: ${instructor.levels.slice(0, 3).join(", ")}.` : undefined,
+  ].filter(Boolean).join(" ");
+
   return (
     <Link
       href={`/instruktorzy/${encodeURIComponent(instructor.name)}`}
@@ -20,13 +25,17 @@ export function InstructorCard({ instructor }: { instructor: InstructorProfile }
         )}
         <div className="min-w-0">
           <p className="font-heading text-sm font-semibold leading-snug text-zinc-50">{instructor.name}</p>
-          <p className="mt-0.5 text-xs text-violet">{instructor.schools.join(", ")}</p>
+          <p className="mt-0.5 text-xs">{instructor.schools.map((school, index) => <span key={school} className={schoolTextClass(school)}>{index > 0 && ", "}{school}</span>)}</p>
           <p className="mt-0.5 text-xs text-muted">
             {instructor.classCount} {pluralizeClasses(instructor.classCount)} w grafiku
           </p>
         </div>
       </div>
-      {instructor.bio && <p className="line-clamp-3 whitespace-pre-line text-sm text-zinc-300">{instructor.bio}</p>}
+      {summary && <p className="line-clamp-3 whitespace-pre-line text-sm text-zinc-300">{summary}</p>}
+      <div className="mt-auto flex items-center justify-between gap-2 text-xs">
+        <span className="font-semibold text-accent">Zobacz profil i grafik →</span>
+        {instructor.profileUrl && <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400">Dane szkoły</span>}
+      </div>
     </Link>
   );
 }

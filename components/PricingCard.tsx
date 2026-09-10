@@ -1,5 +1,6 @@
 import type { School } from "@/lib/types";
 import { SCHOOL_PRICING } from "@/lib/schools";
+import { schoolTextClass } from "@/lib/schedule";
 
 function formatCheckedOn(iso: string): string {
   const [y, m, d] = iso.split("-");
@@ -11,7 +12,7 @@ export function PricingCard({ school }: { school: School }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-line bg-zinc-900 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-      <h2 className="font-heading text-lg font-semibold text-zinc-50">{school}</h2>
+      <h2 className={`font-heading text-lg font-semibold ${schoolTextClass(school)}`}>{school}</h2>
 
       <p>
         <span className="font-heading text-2xl font-bold text-accent">od {pricing.fromPrice}</span>

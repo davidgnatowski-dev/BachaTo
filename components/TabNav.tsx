@@ -3,24 +3,19 @@ import {
   GridIcon,
   CalendarIcon,
   PersonIcon,
-  StarIcon,
-  HeartIcon,
-  TicketIcon,
-  TrophyIcon,
+  PeopleIcon,
   SchoolIcon,
-  PinIcon,
 } from "@/components/icons";
 
+// One events hub now ("/eventy" with category tabs), so the old per-category
+// tabs (Praktyka taneczna / Festiwale / Konkursy) and the Warsaw-only "Miasta"
+// tab are gone — they live as filters inside the hub.
 const TABS = [
   { href: "/", label: "Wszystkie", key: "wszystkie", icon: GridIcon },
-  { href: "/eventy", label: "Eventy", key: "eventy", icon: CalendarIcon },
+  { href: "/eventy", label: "Wydarzenia", key: "eventy", icon: CalendarIcon },
   { href: "/grafik", label: "Zajęcia", key: "zajecia", icon: PersonIcon },
-  { href: "/grafik", label: "Warsztaty", key: "warsztaty", icon: StarIcon },
-  { href: "/imprezy", label: "Sociale", key: "imprezy", icon: HeartIcon },
-  { href: "/eventy", label: "Festiwale", key: "festiwale", icon: TicketIcon },
-  { href: "/konkursy", label: "Konkursy", key: "konkursy", icon: TrophyIcon },
   { href: "/szkoly", label: "Szkoły", key: "szkoly", icon: SchoolIcon },
-  { href: "/eventy", label: "Miasta", key: "miasta", icon: PinIcon },
+  { href: "/instruktorzy", label: "Społeczność", key: "spolecznosc", icon: PeopleIcon },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]["key"];

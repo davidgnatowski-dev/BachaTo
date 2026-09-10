@@ -1,4 +1,4 @@
-import type { ScrapedEvent } from "../types";
+import type { EventPerson, EventProgramItem, ScrapedEvent } from "../types";
 import { htmlToPlainText } from "../text";
 
 const BASE = "https://www.tensy.app";
@@ -41,9 +41,101 @@ interface TensyListResponse {
   results: TensyListItem[];
 }
 
+interface TensyArtist {
+  id: string;
+  full_name?: string | null;
+  stage_name?: string | null;
+  name?: string | null;
+  photo_url?: string | null;
+  bio?: string | null;
+  role_type?: string | null;
+}
+
+interface TensyWorkshop {
+  id: string;
+  name: string;
+  description?: string | null;
+  start_at: string;
+  end_at?: string | null;
+  room?: { name?: string | null } | null;
+  artists?: TensyArtist[];
+  instructors?: TensyArtist[];
+  levels?: Array<{ name?: string | null } | string>;
+}
+
 interface TensyDetail {
   description: string | null;
-  location: { city_name: string | null; street: string | null; place_name: string | null } | null;
+  location: {
+    city_name: string | null;
+    street: string | null;
+    place_name: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
+  artists?: TensyArtist[];
+  judges?: TensyArtist[];
+  jury?: TensyArtist[];
+  djs?: TensyArtist[];
+  workshops?: TensyWorkshop[];
+  program?: TensyWorkshop[];
+}
+
+function artistName(person: TensyArtist): string {
+  return person.stage_name?.trim() || person.full_name?.trim() || person.name?.trim() || "";
+}
+
+function personRole(person: TensyArtist, fallback: EventPerson["role"]): EventPerson["role"] {
+  const role = (person.role_type ?? "").toLowerCase();
+  if (role.includes("dj")) return "dj";
+  if (role.includes("jur") || role.includes("judg")) return "jury";
+  if (role.includes("instructor") || role.includes("teacher")) return "instructor";
+  return fallback;
+}
+
+function detailPeople(detail: TensyDetail | null, category: TensyCategory): EventPerson[] {
+  if (!detail) return [];
+  const groups: Array<[TensyArtist[] | undefined, EventPerson["role"]]> = [
+    [detail.artists, category === "competition" ? "jury" : "instructor"],
+    [detail.judges, "jury"],
+    [detail.jury, "jury"],
+    [detail.djs, "dj"],
+  ];
+  const byId = new Map<string, EventPerson>();
+  for (const [items, fallback] of groups) {
+    for (const person of items ?? []) {
+      const name = artistName(person);
+      if (!name) continue;
+      const key = person.id || name.toLocaleLowerCase("pl");
+      const next: EventPerson = {
+        id: key,
+        name,
+        role: personRole(person, fallback),
+        photoUrl: person.photo_url ?? undefined,
+        bio: htmlToPlainText(person.bio ?? undefined),
+      };
+      if (!byId.has(key)) byId.set(key, next);
+    }
+  }
+  return Array.from(byId.values());
+}
+
+function detailProgram(detail: TensyDetail | null): EventProgramItem[] {
+  const workshops = detail?.workshops ?? detail?.program ?? [];
+  return workshops
+    .filter((item) => item.id && item.name && item.start_at)
+    .map((item) => {
+      const instructors = item.instructors?.length ? item.instructors : item.artists ?? [];
+      return {
+        id: item.id,
+        title: item.name.trim(),
+        description: htmlToPlainText(item.description ?? undefined),
+        startAt: item.start_at,
+        endAt: item.end_at ?? undefined,
+        room: item.room?.name ?? undefined,
+        instructors: Array.from(new Set(instructors.map(artistName).filter(Boolean))),
+        levels: (item.levels ?? []).map((level) => typeof level === "string" ? level : level.name ?? "").filter(Boolean),
+      };
+    });
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -102,11 +194,15 @@ async function fetchCategory(category: TensyCategory): Promise<ScrapedEvent[]> {
       city: detail?.location?.city_name ?? item.city_name ?? undefined,
       venue: detail?.location?.place_name ?? undefined,
       address: detail?.location?.street ?? undefined,
+      latitude: detail?.location?.latitude ?? undefined,
+      longitude: detail?.location?.longitude ?? undefined,
       organizer: item.organizer_name ?? undefined,
       coverImage: item.cover_image ?? undefined,
       description: htmlToPlainText(detail?.description ?? undefined),
       startDate: item.start_at,
       endDate: item.end_at ?? undefined,
+      people: detailPeople(detail, category),
+      programItems: detailProgram(detail),
       sourceUrl: `${BASE}/${endpoint}/${item.slug}`,
     };
   });

@@ -14,7 +14,7 @@ import { useFavorites } from "@/lib/favorites";
 
 export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[] }) {
   const [open, setOpen] = useState(false);
-  const style = schoolStyle();
+  const style = schoolStyle(row.school);
   const levelBucket = classifyLevel(row.level);
   const levelColors = levelStyle(levelBucket);
   const formatColors = formatStyle(row.format);

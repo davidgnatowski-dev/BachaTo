@@ -45,9 +45,9 @@ export function classifyLevel(raw: string | undefined | null): LevelBucket {
   if (pMatch) {
     const n = Number(pMatch[1]);
     if (n <= 1) return "starter";
-    if (n === 2) return "elementary";
-    if (n === 3) return "intermediate";
-    return "advanced";
+    // P is the podstawowy track. A higher P number does not turn it into
+    // the separate S (średniozaawansowany) track.
+    return "elementary";
   }
 
   const sMatch = s.match(/\bs-?(\d)\b/);

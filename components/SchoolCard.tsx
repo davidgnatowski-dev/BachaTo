@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { SchoolProfile } from "@/lib/db";
-import { pluralizeClasses } from "@/lib/schedule";
+import { pluralizeClasses, schoolTextClass } from "@/lib/schedule";
 import { PinIcon, PersonIcon, CalendarIcon } from "@/components/icons";
 
 export function SchoolCard({ school }: { school: SchoolProfile }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-line bg-zinc-900 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
       <div>
-        <h2 className="font-heading text-lg font-semibold text-zinc-50">{school.name}</h2>
+        <h2 className={`font-heading text-lg font-semibold ${schoolTextClass(school.name)}`}>{school.name}</h2>
         <p className="mt-1 text-sm text-zinc-300">{school.description}</p>
       </div>
 

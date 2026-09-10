@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { ScrapedEvent } from "../types";
+import { isLikelyNonBachataEvent } from "../events";
 
 const USER_AGENT = "Mozilla/5.0 (compatible; BachataScheduleBot/0.1; +local-prototype)";
 
@@ -33,6 +34,8 @@ export async function scrapeAbraStudioEvents(): Promise<ScrapedEvent[]> {
     const title = card.find(".events-card-title").first().text().trim();
     const externalId = card.find("[data-class-id]").first().attr("data-class-id");
     if (!title || !externalId) return;
+    // Abra Studio's /imprezy/ page isn't bachata-only ("Abra del Tango" etc.).
+    if (isLikelyNonBachataEvent(title)) return;
 
     const pillTexts = card
       .find(".events-card-pill")
@@ -110,6 +113,7 @@ export async function scrapeSalsaLibreEvents(): Promise<ScrapedEvent[]> {
     const title = eventCell.text().trim();
     if (!dateText || !title) return;
     if (!title.toLowerCase().includes("bachat")) return;
+    if (isLikelyNonBachataEvent(title)) return;
 
     const startDate = salsaLibreDateToIso(dateText);
     if (!startDate) return; // date ranges ("3–9.08.26...") aren't single-day events we can represent

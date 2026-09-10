@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { InstructorProfile } from "@/lib/db";
 import { InstructorCard } from "@/components/InstructorCard";
+import { schoolTextClass } from "@/lib/schedule";
 
 const ALL = "all";
 
@@ -32,7 +33,7 @@ export function InstructorsExplorer({ instructors }: { instructors: InstructorPr
           <select
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-            className="rounded-full border border-line bg-black/40 px-3 py-1.5 text-sm text-zinc-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className={`rounded-full border border-line bg-black/40 px-3 py-1.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent ${school === ALL ? "text-zinc-100" : schoolTextClass(school)}`}
           >
             <option value={ALL}>Wszystkie</option>
             {schools.map((s) => (

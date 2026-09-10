@@ -1,16 +1,15 @@
-import { getUpcomingEvents, getLastRunPerSchool } from "@/lib/db";
+import Link from "next/link";
+import { getUpcomingEvents } from "@/lib/db";
 import { EventsExplorer } from "@/components/EventsExplorer";
-import { RefreshButton } from "@/components/RefreshButton";
+import { DataFreshnessBanner } from "@/components/DataFreshnessBanner";
 import { TabNav } from "@/components/TabNav";
 import { Header } from "@/components/Header";
-import { pluralizeEvents, EVENT_SOURCES } from "@/lib/events";
-import { formatRelative } from "@/lib/format";
+import { EVENT_SOURCES } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
 export default function EventyPage() {
   const events = getUpcomingEvents();
-  const runs = getLastRunPerSchool();
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -18,38 +17,23 @@ export default function EventyPage() {
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Eventy bachatowe — cała Polska</h1>
-          <p className="mt-1 text-sm text-muted">Festiwale, socjale i zawody bachaty w całej Polsce.</p>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Wydarzenia bachatowe — cała Polska</h1>
+          <p className="mt-1 text-sm text-muted">
+            Praktyka taneczna, festiwale, wyjazdy i zawody w jednym kalendarzu. Przełącz kategorię, filtruj po mieście i dacie.
+          </p>
         </div>
-        <RefreshButton />
+        <Link href="/dla-organizatorow" className="shrink-0 rounded-full border border-violet/50 px-4 py-2 text-sm font-semibold text-violet hover:bg-violet/10">
+          Dodaj wydarzenie
+        </Link>
       </header>
 
       <TabNav active="eventy" />
 
-      <section className="flex flex-wrap gap-3 text-xs text-muted">
-        {EVENT_SOURCES.every((s) => !runs[s]) && (
-          <p>Baza jest pusta — kliknij &quot;Odśwież teraz&quot; albo uruchom `npm run scrape`.</p>
-        )}
-        {EVENT_SOURCES.map((source) => {
-          const run = runs[source];
-          if (!run) return null;
-          return (
-            <span
-              key={source}
-              className={`rounded-full border px-3 py-1 ${
-                run.ok ? "border-line bg-zinc-900" : "border-rose-900/60 bg-rose-950/40 text-rose-300"
-              }`}
-            >
-              {source}: {run.ok ? `${run.foundCount} ${pluralizeEvents(run.foundCount)}` : "błąd"} · ostatnia
-              aktualizacja {formatRelative(run.finishedAt)}
-            </span>
-          );
-        })}
-      </section>
+      <DataFreshnessBanner sources={[...EVENT_SOURCES]} label="Kalendarz wydarzeń" />
 
       {events.length === 0 ? (
         <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">
-          Brak danych do wyświetlenia. Uruchom scraping, żeby zobaczyć eventy.
+          Brak danych do wyświetlenia.
         </p>
       ) : (
         <EventsExplorer rows={events} />

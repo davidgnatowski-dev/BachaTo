@@ -45,7 +45,7 @@ export function HeartButton({
         e.stopPropagation();
         onToggle();
       }}
-      aria-label={active ? "Usuń z planu" : "Dodaj do planu"}
+      aria-label={active ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
       aria-pressed={active}
       className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
         active

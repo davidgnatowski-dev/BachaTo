@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { ScrapedClass } from "../types";
 import { classifyFormatFromText } from "../format";
 import { htmlToPlainText } from "../text";
+import { splitInstructors } from "../schedule";
 
 const URL = "https://www.warsawsalsaclub.pl/grafik";
 const BIO_PAGE_URL = "https://www.warsawsalsaclub.pl/bachata";
@@ -45,8 +46,14 @@ function slugify(...parts: (string | undefined)[]): string {
  * "Maciek K.") that also appears as the schedule's instructor label, so we
  * can join the two on that string.
  */
-async function fetchInstructorBios(): Promise<Map<string, string>> {
-  const bios = new Map<string, string>();
+interface InstructorSourceProfile {
+  bio?: string;
+  photoUrl?: string;
+  profileUrl: string;
+}
+
+async function fetchInstructorProfiles(): Promise<Map<string, InstructorSourceProfile>> {
+  const profiles = new Map<string, InstructorSourceProfile>();
   try {
     const res = await fetch(BIO_PAGE_URL, { headers: { "User-Agent": USER_AGENT } });
     if (!res.ok) throw new Error(`${BIO_PAGE_URL} -> HTTP ${res.status}`);
@@ -54,14 +61,41 @@ async function fetchInstructorBios(): Promise<Map<string, string>> {
     const $ = cheerio.load(html);
 
     $(".teacher_content-wrapper").each((_, el) => {
-      const name = $(el).find(".teacher_text-description > p").first().text().trim().replace(/&amp;/g, "&");
-      const bio = htmlToPlainText($(el).find(".teacher_text-description .w-richtext").first().html());
-      if (name && bio) bios.set(name, bio);
+      const displayName = $(el).find(".teacher_text-description > p").first().text().trim().replace(/&amp;/g, "&");
+      const names = splitInstructors(displayName);
+      const richText = $(el).find(".teacher_text-description .w-richtext").first();
+      const photoUrl = $(el).find("img.teacher_photo").first().attr("src");
+      const fullBio = htmlToPlainText(richText.html());
+      const sections: { heading: string; text: string[] }[] = [];
+      let current: { heading: string; text: string[] } | undefined;
+
+      richText.find("p").each((__, paragraph) => {
+        const text = $(paragraph).text().trim().replace(/\s+/g, " ");
+        if (!text) return;
+        const heading = $(paragraph).find("strong").first().text().trim();
+        if (heading) {
+          current = { heading, text: [] };
+          sections.push(current);
+        } else if (current) {
+          current.text.push(text);
+        }
+      });
+
+      for (const name of names) {
+        const firstName = name.split(/\s+/)[0]?.toLocaleLowerCase("pl");
+        const section = sections.find((item) => item.heading.toLocaleLowerCase("pl").startsWith(firstName));
+        const bio = section?.text.join("\n\n") || (names.length === 1 ? fullBio : undefined);
+        const profile = { bio, photoUrl, profileUrl: BIO_PAGE_URL };
+        profiles.set(name, profile);
+        // The schedule abbreviates Maciek Kurtyka to "Maciek K.", while the
+        // official teacher card uses only his first name inside the duo.
+        if (name === "Maciek") profiles.set("Maciek K.", profile);
+      }
     });
   } catch {
     // Bio page structure changed or is unreachable — schedule scraping still succeeds without bios.
   }
-  return bios;
+  return profiles;
 }
 
 /**
@@ -71,9 +105,9 @@ async function fetchInstructorBios(): Promise<Map<string, string>> {
  * represent an actual scheduled class, so we key off that.
  */
 export async function scrapeWarsawSalsaClub(): Promise<ScrapedClass[]> {
-  const [res, bios] = await Promise.all([
+  const [res, profiles] = await Promise.all([
     fetch(URL, { headers: { "User-Agent": USER_AGENT } }),
-    fetchInstructorBios(),
+    fetchInstructorProfiles(),
   ]);
   if (!res.ok) throw new Error(`${URL} -> HTTP ${res.status}`);
   const html = await res.text();
@@ -133,15 +167,26 @@ export async function scrapeWarsawSalsaClub(): Promise<ScrapedClass[]> {
           .filter(Boolean);
         const formatText = formatTexts[formatTexts.length - 1];
         const instructor = overrideTeacher.replace(/&amp;/g, "&");
+        const instructorBios: Record<string, string> = {};
+        const instructorPhotos: Record<string, string> = {};
+        const instructorProfileUrls: Record<string, string> = {};
+        for (const name of splitInstructors(instructor)) {
+          const profile = profiles.get(name);
+          if (profile?.bio) instructorBios[name] = profile.bio;
+          if (profile?.photoUrl) instructorPhotos[name] = profile.photoUrl;
+          if (profile?.profileUrl) instructorProfileUrls[name] = profile.profileUrl;
+        }
 
         results.push({
           externalId: slugify(roomName, dayCode, startTime, title),
           title,
           danceStyle: "Bachata",
           level: level || undefined,
-          format: classifyFormatFromText(formatText, "unknown"),
+          format: classifyFormatFromText(formatText, "unknown", splitInstructors(instructor).length),
           instructor,
-          instructorBio: bios.get(instructor),
+          instructorBios: Object.keys(instructorBios).length > 0 ? instructorBios : undefined,
+          instructorPhotos: Object.keys(instructorPhotos).length > 0 ? instructorPhotos : undefined,
+          instructorProfileUrls: Object.keys(instructorProfileUrls).length > 0 ? instructorProfileUrls : undefined,
           location: roomName ? `Warsaw Salsa Club, ${roomName}` : "Warsaw Salsa Club",
           dayOfWeek,
           startTime,

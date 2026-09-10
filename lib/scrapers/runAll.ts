@@ -3,6 +3,8 @@ import type { School, ScrapeResult, ScrapedEvent } from "../types";
 import { scrapeAbraStudio } from "./abraStudio";
 import { scrapeWarsawSalsaClub } from "./warsawSalsaClub";
 import { scrapeSalsaLibre } from "./salsaLibre";
+import { scrapeOye } from "./oye";
+import { scrapeVivaCuba } from "./vivaCuba";
 import { scrapeTensyEvents } from "./tensyEvents";
 import { getCommunityEvents } from "./communityEvents";
 import { scrapeAbraStudioEvents, scrapeSalsaLibreEvents } from "./schoolEvents";
@@ -12,6 +14,8 @@ const SCRAPERS: { school: School; run: () => Promise<import("../types").ScrapedC
   { school: "Abra Studio", run: scrapeAbraStudio },
   { school: "Warsaw Salsa Club", run: scrapeWarsawSalsaClub },
   { school: "Salsa Libre", run: scrapeSalsaLibre },
+  { school: "Oye!", run: scrapeOye },
+  { school: "Viva Cuba", run: scrapeVivaCuba },
 ];
 
 const EVENT_SOURCE = "Tensy";
