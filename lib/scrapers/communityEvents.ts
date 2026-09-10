@@ -2,12 +2,11 @@ import type { ScrapedEvent } from "../types";
 import { toLocalIsoDate } from "../format";
 
 /**
- * Recurring social events reported directly by the community (Facebook
- * groups, word of mouth) rather than found on any organizer's own site or on
- * Tensy. There's no API to poll here — this is a small hand-maintained list;
- * update it as people report new standing weekly meetups or as old ones stop
- * happening. Each entry generates its own upcoming occurrences on every
- * scrape run, so nothing needs to be re-added week to week.
+ * Recurring socials/praktisy that don't have their own scrapeable event page
+ * — hand-maintained from the schools' own schedules and event pages. Update
+ * this list as praktisy start or stop. Each entry regenerates its upcoming
+ * occurrences on every scrape run, so nothing needs re-adding week to week;
+ * `startsOn` / `endsOn` bound a season.
  */
 interface RecurringWeeklySocial {
   slug: string;
@@ -21,35 +20,59 @@ interface RecurringWeeklySocial {
   description: string;
   sourceUrl: string;
   weeksAhead: number;
+  /** Drop generated occurrences before this ISO date (e.g. a season that hasn't started). */
+  startsOn?: string;
+  /** Drop generated occurrences after this ISO date (e.g. a summer series that ends). */
+  endsOn?: string;
+  coverImage?: string;
 }
 
 const RECURRING_WEEKLY_SOCIALS: RecurringWeeklySocial[] = [
   {
-    slug: "bulwary-cnk-sroda",
-    title: "Bulwary przy CNK · 21:00–23:30",
-    dayOfWeek: 3, // Wednesday
-    startTime: "21:00",
-    endTime: "23:30",
+    slug: "praktis-bachaty-abra",
+    title: "Praktis bachaty w Abra Studio · 22:20–01:00",
+    dayOfWeek: 1, // Monday
+    startTime: "22:20",
+    endTime: "01:00",
     city: "Warszawa",
-    venue: "Bulwary Wiślane przy Centrum Nauki Kopernik",
+    venue: "Abra Studio, al. Jana Pawła II 11",
     description:
-      "Nieoficjalne, cykliczne spotkanie tancerzy nad Wisłą — zgłoszone przez społeczność, nie ma własnej strony wydarzenia. " +
-      "Uwaga: to wydarzenie bywa odwoływane, jeśli w tym samym czasie coś dzieje się w CNK — przed wyjściem warto to zweryfikować.",
-    sourceUrl: "https://www.google.com/maps/search/?api=1&query=Bulwary+Wi%C5%9Blane+Centrum+Nauki+Kopernik+Warszawa",
-    weeksAhead: 6,
+      "Praktis dla wszystkich poziomów, w każdy poniedziałek po zajęciach — za konsoletą DJ Paweł Dyjach. " +
+      "Tego samego wieczoru wcześniej (do 22:20) w Abra Studio są zajęcia Bachata Sensual (poziom S) u Dawida Gnatowskiego i Julii Martowicz — plan tych zajęć sprawdzisz w zakładce Grafik.",
+    sourceUrl: "/grafik?day=1&school=Abra%20Studio",
+    coverImage: "/events/praktis-abra-studio.jpg",
+    weeksAhead: 10,
   },
   {
-    slug: "bulwary-cnk-niedziela",
-    title: "Bulwary przy CNK · 20:00–23:30",
-    dayOfWeek: 0, // Sunday
-    startTime: "20:00",
-    endTime: "23:30",
+    slug: "praktis-bachaty-salsa-libre",
+    title: "Praktis bachaty w Salsa Libre · 22:10–00:00",
+    dayOfWeek: 3, // Wednesday
+    startTime: "22:10",
+    endTime: "00:00",
     city: "Warszawa",
-    venue: "Bulwary Wiślane przy Centrum Nauki Kopernik",
+    venue: "Salsa Libre, ul. Żelazna 59",
     description:
-      "Nieoficjalne, cykliczne spotkanie tancerzy nad Wisłą — zgłoszone przez społeczność, nie ma własnej strony wydarzenia.",
-    sourceUrl: "https://www.google.com/maps/search/?api=1&query=Bulwary+Wi%C5%9Blane+Centrum+Nauki+Kopernik+Warszawa",
-    weeksAhead: 6,
+      "Regularny praktis bachaty w każdą środę, 22:10–00:00 — startuje 7 października. " +
+      "Prowadzenie: Piotr Koziołkiewicz (poziom open). Informacje z grafiku i strony wydarzeń Salsa Libre.",
+    sourceUrl: "https://salsalibre.pl/wydarzenia/",
+    startsOn: "2026-10-07",
+    weeksAhead: 12,
+  },
+  {
+    slug: "niedzielne-tance-norblin",
+    title: "Niedzielne tańce w Fabryce Norblina · 12:00–15:00",
+    dayOfWeek: 0, // Sunday
+    startTime: "12:00",
+    endTime: "15:00",
+    city: "Warszawa",
+    venue: "Fabryka Norblina, Pasaż Wernera, ul. Żelazna 51/53",
+    description:
+      "Bezpłatne, otwarte tańce na świeżym powietrzu — Salsa Libre razem z Fundacją Fabryki Norblina. " +
+      "12:00–13:00 lekcje salsy i bachaty od podstaw, 13:00–15:00 latynoska impreza z rotacją partnerów. " +
+      "Cykl wakacyjny — ostatnia niedziela 13 września.",
+    sourceUrl: "https://salsalibre.pl/niedzielne-tance/",
+    endsOn: "2026-09-13",
+    weeksAhead: 4,
   },
 ];
 
@@ -69,6 +92,8 @@ export function getCommunityEvents(): ScrapedEvent[] {
   const results: ScrapedEvent[] = [];
   for (const social of RECURRING_WEEKLY_SOCIALS) {
     for (const date of nextOccurrences(social.dayOfWeek, social.weeksAhead)) {
+      if (social.startsOn && date < social.startsOn) continue;
+      if (social.endsOn && date > social.endsOn) continue;
       results.push({
         externalId: `${social.slug}-${date}`,
         category: "social",
@@ -78,6 +103,7 @@ export function getCommunityEvents(): ScrapedEvent[] {
         description: social.description,
         startDate: date,
         sourceUrl: social.sourceUrl,
+        coverImage: social.coverImage,
       });
     }
   }
