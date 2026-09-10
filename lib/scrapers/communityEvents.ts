@@ -85,36 +85,54 @@ const RECURRING_WEEKLY_SOCIALS: RecurringWeeklySocial[] = [
  */
 const ONE_OFF_EVENTS: ScrapedEvent[] = [
   {
-    externalId: "unico-bachata-battle-solo-2026-09",
-    category: "competition",
-    title: "Bachata Battle Competition (solo) — Único Warsaw Bachata Festival",
-    city: "Warszawa",
-    venue: "Centrum Kreatywności Targowa",
-    address: "ul. Targowa 56, 03-733",
-    organizer: "Único Bachata",
-    description:
-      "Solowa bitwa taneczna podczas festiwalu Único (18–20.09), w dwóch kategoriach: Ladies i Men. " +
-      "Eliminacje z oceną za technikę, muzykalność i styl (maks. 12 pkt), finały w formacie „5 to Smoke” (pojedynki 1 na 1). " +
-      "Wymagany Full Pass lub Party Pass festiwalu oraz osobny Bachata Battle Pass. Pula nagród ponad 9 800 zł. Zapisy przez stronę Único.",
-    startDate: "2026-09-18",
-    endDate: "2026-09-20",
-    sourceUrl: "https://www.unicobachata.com/en/weekend/competition/",
-  },
-  {
     externalId: "unico-social-battle-pary-2026-09",
     category: "competition",
-    title: "Bachata Social Battle (w parach) — Único Warsaw Bachata Festival",
+    title: "Bachata Social Battle — konkurs w parach · Único Warsaw Bachata Festival",
     city: "Warszawa",
     venue: "Centrum Kreatywności Targowa",
     address: "ul. Targowa 56, 03-733",
     organizer: "Único Bachata",
+    coverImage: "/events/comp-unico-festival.jpg",
     description:
-      "Pierwsza edycja konkursu improwizacji w parach w formacie Battle, podczas festiwalu Único (18–20.09). " +
+      "Konkurs improwizacji w parach (couple competition) w formacie Battle, podczas festiwalu Único (18–20.09). " +
       "Międzynarodowe jury reprezentujące różne style bachaty. Wymagany Social Battle Pass (49 zł) lub wyższy pakiet festiwalu. " +
-      "Zapisy przez stronę Único.",
+      "Zapisy i szczegóły na stronie Único.",
     startDate: "2026-09-18",
     endDate: "2026-09-20",
     sourceUrl: "https://www.unicobachata.com/en/festival/",
+  },
+  {
+    externalId: "wbmu-social-competition-pary-2026-11",
+    category: "competition",
+    title: "World Bachata Social Competition — finały w parach · World Bachata Meet Up",
+    city: "Warszawa",
+    venue: "Warszawski Dom Technika NOT",
+    address: "ul. Tadeusza Czackiego 3/5, 00-043",
+    organizer: "World Bachata Meet Up",
+    coverImage: "/events/comp-wbmu.jpg",
+    description:
+      "Finały konkursu social bachaty w parach podczas World Bachata Meet Up (27–29.11), 11. edycja festiwalu. " +
+      "Zjeżdżają najlepsi tancerze z europejskich kwalifikacji regionalnych. Trzy dni warsztatów, cztery imprezy nocne. " +
+      "Bilety przez stronę organizatora.",
+    startDate: "2026-11-27",
+    endDate: "2026-11-29",
+    sourceUrl: "https://worldbachatameetup.com/",
+  },
+  {
+    externalId: "wbmu-solo-competition-2026-11",
+    category: "competition",
+    title: "Solo Competition (3. edycja) · World Bachata Meet Up",
+    city: "Warszawa",
+    venue: "Warszawski Dom Technika NOT",
+    address: "ul. Tadeusza Czackiego 3/5, 00-043",
+    organizer: "World Bachata Meet Up",
+    coverImage: "/events/comp-wbmu.jpg",
+    description:
+      "Trzecia edycja konkursu solo podczas World Bachata Meet Up (27–29.11) w Warszawie. " +
+      "Występy solowe oceniane przez międzynarodowe jury. Rejestracja przez stronę konkursu.",
+    startDate: "2026-11-27",
+    endDate: "2026-11-29",
+    sourceUrl: "https://worldbachatameetup.com/competition-registration/",
   },
 ];
 
