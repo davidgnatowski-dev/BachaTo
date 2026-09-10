@@ -55,6 +55,7 @@ const RECURRING_WEEKLY_SOCIALS: RecurringWeeklySocial[] = [
       "Regularny praktis bachaty w każdą środę, 22:10–00:00 — startuje 7 października. " +
       "Prowadzenie: Piotr Koziołkiewicz (poziom open). Informacje z grafiku i strony wydarzeń Salsa Libre.",
     sourceUrl: "https://salsalibre.pl/wydarzenia/",
+    coverImage: "/events/praktis-salsa-libre.jpg",
     startsOn: "2026-10-07",
     weeksAhead: 12,
   },
