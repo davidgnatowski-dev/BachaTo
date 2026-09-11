@@ -137,16 +137,16 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
               </div>
             </div>
 
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-300"><CheckIcon className="h-4 w-4" />Twoja aktywność</p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">Po wydarzeniu potwierdź udział. Trafi ono do statystyk wraz z nazwą, datą i kategorią.</p>
-              <div className="mt-4"><EventAttendanceButton source={event.source} eventId={event.id} attended={attended} canConfirm={canConfirm} loggedIn={Boolean(user)} /></div>
-            </div>
+            {canConfirm && (
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-300"><CheckIcon className="h-4 w-4" />Twoja aktywność</p>
+                <div className="mt-3"><EventAttendanceButton source={event.source} eventId={event.id} attended={attended} canConfirm={canConfirm} loggedIn={Boolean(user)} /></div>
+              </div>
+            )}
 
             <div className="rounded-2xl border border-violet/20 bg-violet/[0.06] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet">Społeczność</p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">Opcjonalnie pokaż, że się wybierasz. Publicznie wyświetlamy tylko osoby z włączonym profilem społecznościowym.</p>
-              <div className="mt-4"><EventGoingButton source={event.source} eventId={event.id} loggedIn={Boolean(user)} initialAttending={rsvp.attending} initialCount={rsvp.count} publicNames={rsvp.names} /></div>
+              <div className="mt-3"><EventGoingButton source={event.source} eventId={event.id} loggedIn={Boolean(user)} initialAttending={rsvp.attending} initialCount={rsvp.count} publicNames={rsvp.names} /></div>
             </div>
           </aside>
         </div>
