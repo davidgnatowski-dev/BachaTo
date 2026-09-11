@@ -92,6 +92,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     venue: "Palais Wertheim",
     address: "Kärntner Ring 18, 1010 Wien, Austria",
     organizer: "Warsaw Bachata Meet Up · Vienna Bachata Congress",
+    coverImage: "/events/comp-vienna.jpg",
     description:
       "Austriackie kwalifikacje do World Bachata Social Competition. Piątek 18.09, 19:00–01:00; trzy rundy kwalifikacji, wyłącznie improwizacja i taniec social. " +
       "Udział wymaga pełnego karnetu festiwalowego (Full Pass) lub karnetu imprezowego (Party Pass) na Vienna Bachata Congress oraz dodatkowej opłaty konkursowej. Rejestracja przez aplikację Bailacon.",
@@ -109,6 +110,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     venue: "Grand Bellagio Batumi",
     address: "3 Lech and Maria Kaczynski St, Batumi, Georgia",
     organizer: "Warsaw Bachata Meet Up · Batumi Bachata Festival",
+    coverImage: "/events/comp-batumi.jpg",
     description:
       "Gruzińskie kwalifikacje do światowego finału w Warszawie. Piątek 25.09 od 14:00 CEST; trzy rundy o 16:00, 20:00 i 23:00, wyłącznie improwizacja i taniec social. " +
       "Wymagany pełny karnet festiwalowy (Full Pass) lub karnet imprezowy (Party Pass) oraz dodatkowa opłata 25 euro. Rejestracja przez aplikację Bailacon.",
@@ -209,6 +211,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     venue: "MOA Berlin",
     address: "Stephanstraße 41, 10559 Berlin, Niemcy",
     organizer: "Bachata Explosion",
+    coverImage: "/events/comp-berlin.jpg",
     description:
       "Konkurs Jack & Jill podczas Berlin Bachata Festival. Pierwsza runda jest planowana w piątek, a finały w sobotę. Uczestnik musi posiadać pełny karnet festiwalowy (Full Pass). Akrobacje są zabronione. Jury ocenia krok podstawowy, rytm i pracę bioder, postawę, kontakt w parze, technikę, muzykalność, kreatywność oraz walory widowiskowe. Nagroda główna obejmuje 100 euro, trofeum, pięć karnetów dla partnerów oraz możliwość poprowadzenia zajęć podczas edycji 2027.",
     startDate: "2026-10-16",
@@ -223,6 +226,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     venue: "Verdi Budapest Aquincum Hotel",
     address: "Árpád fejedelem útja 94, H-1036 Budapeszt, Węgry",
     organizer: "All Stars Festival",
+    coverImage: "/events/comp-allstars2026.jpg",
     description:
       "Konkurs bachaty podczas 13. edycji All Stars Festival. Organizator potwierdził konkurs w programie festiwalu, ale nie opublikował jeszcze kategorii, godzin ani opłaty dla edycji 2026. Osobna strona konkursowa nadal przedstawia regulamin z 2025 roku, dlatego dawne zasady nie są tutaj prezentowane jako aktualne.",
     startDate: "2026-11-06",
@@ -236,6 +240,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     city: "Warszawa",
     venue: "Campanile Prime Warsaw Airport",
     organizer: "elSol Festival",
+    coverImage: "/events/comp-elsol.jpg",
     description:
       "Niezależny konkurs amatorski bachaty social, korzystający z cyfrowej platformy Bachata Social World Cup. Rejestracja jest indywidualna, a partnerzy zmieniają się w formule inspirowanej Jack & Jill. Eliminacje i półfinał odbędą się w sobotę, a finał w niedzielę. Opłata wynosi 25 euro, a termin zapisów upływa 13 listopada o 15:00 CET. Wymagany jest karnet festiwalowy obejmujący oba dni; pojedynczy bilet na imprezę nie wystarcza.",
     startDate: "2026-11-14",
@@ -263,6 +268,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     city: "Oaxaca",
     venue: "Centro Cultural y de Convenciones de Oaxaca",
     organizer: "Oaxaca Paramount Cup",
+    coverImage: "/events/comp-oaxaca.jpg",
     description:
       "Trzynasta edycja międzynarodowego turnieju tanecznego. Program obejmuje liczne kategorie bachaty, obok innych stylów. Szczegóły kategorii, rejestracji i regulamin znajdują się na oficjalnej stronie organizatora.",
     startDate: "2027-03-17",
@@ -276,6 +282,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     city: "Santa Susanna",
     venue: "Hotel Don Ángel",
     organizer: "BDC Congress",
+    coverImage: "/events/comp-barcelona.jpg",
     description:
       "Pierwsza edycja konkursu bachaty i salsy z ponad 12 kategoriami oraz międzynarodowym, 13-osobowym jury. Przewidziano kategorię pokazową (Showcase) z przygotowaną choreografią oraz kategorię sceniczną (Stage) opartą na improwizacji. Konkurs jest otwarty dla uczestników na różnych poziomach.",
     startDate: "2027-04-02",
@@ -300,6 +307,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     title: "Summer Bachata Festival 2027 — konkurs Jack & Jill",
     city: "Rovinj",
     organizer: "Summer Bachata Festival",
+    coverImage: "/events/comp-summer.jpg",
     description:
       "Konkurs Jack & Jill podczas Summer Bachata Festival. Eliminacje zaplanowano na piątek 4 czerwca w Villas Rubin, półfinały w nocy z piątku na sobotę w Adris Old Tobacco Factory, a finały na sobotę 5 czerwca.",
     startDate: "2027-06-04",
