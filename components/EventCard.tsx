@@ -7,6 +7,7 @@ import { DateBadge } from "@/components/DateBadge";
 import { PinIcon, TicketIcon } from "@/components/icons";
 import { EventPlanControls } from "@/components/EventPlanControls";
 import { EventCoverImage } from "@/components/EventCoverImage";
+import { OrganizerBadge } from "@/components/OrganizerBadge";
 
 export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth?: () => void }) {
   const colors = categoryStyle(row.category);
@@ -40,6 +41,9 @@ export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth
         {relative && <span className="pointer-events-none absolute bottom-2.5 left-2.5 z-10 rounded-full bg-zinc-950/85 px-2.5 py-1 text-[10px] font-bold tracking-wide text-white backdrop-blur">{relative}</span>}
         <div className="absolute right-2.5 top-2.5 z-10">
           <EventPlanControls row={row} compact onRequireAuth={onRequireAuth} />
+        </div>
+        <div className="pointer-events-none absolute bottom-2.5 right-2.5 z-10">
+          <OrganizerBadge organizer={row.organizer} competitionSeries={row.competitionSeries} />
         </div>
       </div>
 

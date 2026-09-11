@@ -12,6 +12,7 @@ import { EventStructuredDetails } from "@/components/EventStructuredDetails";
 import { EventGoingButton } from "@/components/EventGoingButton";
 import { EventCard } from "@/components/EventCard";
 import { EventCoverImage } from "@/components/EventCoverImage";
+import { OrganizerBadge } from "@/components/OrganizerBadge";
 import { CalendarIcon, CheckIcon, PinIcon, TicketIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +60,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
 
       <article className="overflow-hidden rounded-3xl border border-line bg-zinc-900/55 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
         <div className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-          <div className="relative min-h-72 bg-zinc-950 lg:min-h-[520px]">
+          <div className="relative min-h-72 self-start bg-zinc-950 lg:min-h-[520px] lg:max-h-[640px]">
             {event.coverImage ? (
               <EventCoverImage src={event.coverImage} loading="eager" paddingClassName="p-3 sm:p-5 lg:p-8" />
             ) : (
@@ -68,11 +69,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
               </div>
             )}
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+            <div className="absolute bottom-6 right-6 z-20 sm:bottom-8 sm:right-8">
+              <OrganizerBadge organizer={event.organizer} competitionSeries={event.competitionSeries} className="h-9 w-9" />
+            </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 p-6 sm:p-8">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${colors.bg} ${colors.text} ${colors.ring}`}>
                 {CATEGORY_LABELS[event.category]}
               </span>
-              <h1 className="mt-3 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl">{event.title}</h1>
+              <h1 className="mt-3 max-w-3xl font-heading text-3xl font-semibold leading-tight text-white sm:text-4xl pr-12">{event.title}</h1>
               {event.organizer && <p className="mt-2 text-sm text-zinc-300">Organizator: {event.organizer}</p>}
             </div>
           </div>
