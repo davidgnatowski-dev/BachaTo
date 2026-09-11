@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getEventBySourceAndId, getEventRsvp, getRelatedEvents, getUserEventProgramActivity, hasUserAttendedEvent } from "@/lib/db";
+import { getCompetitionChildren, getEventBySourceAndId, getEventRsvp, getRelatedEvents, getUserEventProgramActivity, hasUserAttendedEvent } from "@/lib/db";
 import { CATEGORY_LABELS, categoryStyle, eventProgramFavoriteId, formatEventDateRange } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
 import { Header } from "@/components/Header";
@@ -11,9 +11,15 @@ import { EventPlanControls } from "@/components/EventPlanControls";
 import { EventStructuredDetails } from "@/components/EventStructuredDetails";
 import { EventGoingButton } from "@/components/EventGoingButton";
 import { EventCard } from "@/components/EventCard";
+import { EventCoverImage } from "@/components/EventCoverImage";
 import { CalendarIcon, CheckIcon, PinIcon, TicketIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
+
+function competitionRoleCount(count: number | undefined, role: "Leader" | "Follower"): string {
+  const value = count ?? 0;
+  return `${value} ${value === 1 ? role : `${role}ów`}`;
+}
 
 export default async function EventDetailPage({ params }: { params: Promise<{ source: string; id: string }> }) {
   const { source: encodedSource, id: rawId } = await params;
@@ -36,6 +42,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
   const attendedSessionIds = (event.programItems ?? []).filter((item) => attendedProgramKeys.has(eventProgramFavoriteId(event.source, event.id, item.id))).map((item) => item.id);
   const rsvp = getEventRsvp(event.source, event.id, user?.id);
   const related = getRelatedEvents(event);
+  const competitionChildren = getCompetitionChildren(event);
   const canConfirm = event.startDate <= toLocalIsoDate(new Date());
   const colors = categoryStyle(event.category);
   const location = [event.venue, event.address, event.city].filter(Boolean).join(", ");
@@ -54,15 +61,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
         <div className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
           <div className="relative min-h-72 bg-zinc-950 lg:min-h-[520px]">
             {event.coverImage ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external event artwork
-              <img src={event.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <EventCoverImage src={event.coverImage} loading="eager" paddingClassName="p-3 sm:p-5 lg:p-8" />
             ) : (
               <div className={`absolute inset-0 flex items-center justify-center ${colors.bg}`}>
                 <TicketIcon className={`h-24 w-24 opacity-40 ${colors.text}`} />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-6 sm:p-8">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${colors.bg} ${colors.text} ${colors.ring}`}>
                 {CATEGORY_LABELS[event.category]}
               </span>
@@ -75,7 +81,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 rounded-xl bg-violet/10 p-2 text-violet"><CalendarIcon className="h-5 w-5" /></span>
-                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">Termin</p><p className="mt-1 font-semibold text-zinc-100">{formatEventDateRange(event)}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted">{competitionChildren.length > 0 ? "Okres eliminacji" : "Termin"}</p><p className="mt-1 font-semibold text-zinc-100">{formatEventDateRange(event)}</p></div>
               </div>
               {location && (
                 <div className="flex items-start gap-3">
@@ -84,6 +90,37 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
                 </div>
               )}
             </div>
+
+            {event.category === "competition" && (
+              <div className="rounded-2xl border border-sky-700/35 bg-sky-950/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-300">Jak wziąć udział</p>
+                {competitionChildren.length > 0 ? (
+                  <>
+                    <p className="mt-2 text-sm leading-6 text-zinc-300">
+                      To cykl {competitionChildren.length} eliminacji. Wybierz jedną z nich, a następnie otwórz jej oficjalną stronę i dokonaj indywidualnego zgłoszenia.
+                    </p>
+                    <a href="#eliminacje" className="mt-3 inline-flex rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-sky-400">
+                      Zobacz eliminacje ↓
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-300">
+                      {event.registrationStatus && <span>{event.registrationStatus === "open" ? "Zapisy otwarte" : event.registrationStatus === "closed" ? "Zapisy zamknięte" : "Zapisy jeszcze nieaktywne"}</span>}
+                      {event.registrationPrice && <span>Opłata: {event.registrationPrice}</span>}
+                    </div>
+                    {(event.qualifyingSpotsLeaders || event.qualifyingSpotsFollowers) && (
+                      <p className="mt-2 text-xs leading-5 text-sky-200">
+                        Awans: {competitionRoleCount(event.qualifyingSpotsLeaders, "Leader")} i {competitionRoleCount(event.qualifyingSpotsFollowers, "Follower")}.
+                      </p>
+                    )}
+                    <a href={event.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-sky-400">
+                      Sprawdź zapisy u organizatora ↗
+                    </a>
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="h-px bg-line" />
 
@@ -110,6 +147,19 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
           </aside>
         </div>
       </article>
+
+      {competitionChildren.length > 0 && (
+        <section id="eliminacje" className="scroll-mt-6 rounded-3xl border border-sky-800/50 bg-sky-950/15 p-5 sm:p-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300">Jak wystartować</p>
+          <h2 className="mt-1 font-heading text-2xl font-semibold text-zinc-50">Wybierz konkretną eliminację</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
+            Podany wyżej zakres dat obejmuje cały cykl. Rejestracja odbywa się osobno na każdą eliminację — użyj przycisku „Oryginalna strona” na wybranej karcie.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {competitionChildren.map((row) => <EventCard key={`${row.source}-${row.id}`} row={row} />)}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <EventStructuredDetails event={event} loggedIn={Boolean(user)} attendedSessionIds={attendedSessionIds} />

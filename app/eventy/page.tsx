@@ -17,9 +17,9 @@ export default function EventyPage() {
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Wydarzenia bachatowe — cała Polska</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Wydarzenia bachatowe — Polska i świat</h1>
           <p className="mt-1 text-sm text-muted">
-            Praktyka taneczna, festiwale, wyjazdy i zawody w jednym kalendarzu. Przełącz kategorię, filtruj po mieście i dacie.
+            Praktyka taneczna, festiwale, wyjazdy i zawody — w tym oficjalne kwalifikacje Bachata Social World Cup. Filtruj po mieście, dacie i źródle.
           </p>
         </div>
         <Link href="/dla-organizatorow" className="shrink-0 rounded-full border border-violet/50 px-4 py-2 text-sm font-semibold text-violet hover:bg-violet/10">

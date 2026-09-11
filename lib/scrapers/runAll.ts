@@ -8,6 +8,7 @@ import { scrapeVivaCuba } from "./vivaCuba";
 import { scrapeTensyEvents } from "./tensyEvents";
 import { getCommunityEvents } from "./communityEvents";
 import { scrapeAbraStudioEvents, scrapeSalsaLibreEvents } from "./schoolEvents";
+import { scrapeBachataSocialWorldCupEvents } from "./bachataSocialWorldCup";
 import { eventDedupKey } from "../events";
 
 const SCRAPERS: { school: School; run: () => Promise<import("../types").ScrapedClass[]> }[] = [
@@ -21,6 +22,7 @@ const SCRAPERS: { school: School; run: () => Promise<import("../types").ScrapedC
 const EVENT_SOURCE = "Tensy";
 const COMMUNITY_EVENT_SOURCE = "Społeczność";
 const SCHOOL_EVENT_SOURCE = "Szkoły";
+const WORLD_CUP_EVENT_SOURCE = "Bachata Social World Cup";
 
 export async function runAllScrapers(): Promise<ScrapeResult[]> {
   const results: ScrapeResult[] = [];
@@ -54,6 +56,35 @@ export async function runEventScrape(): Promise<ScrapeResult> {
     const error = err instanceof Error ? err.message : String(err);
     logScrapeRun({ school: EVENT_SOURCE, startedAt, finishedAt: new Date().toISOString(), ok: false, foundCount: 0, newCount: 0, error });
     return { school: EVENT_SOURCE, ok: false, foundCount: 0, newCount: 0, error };
+  }
+}
+
+export async function runWorldCupEventScrape(): Promise<ScrapeResult> {
+  const startedAt = new Date().toISOString();
+  try {
+    const items = await scrapeBachataSocialWorldCupEvents();
+    const { foundCount, newCount } = saveScrapedEvents(WORLD_CUP_EVENT_SOURCE, items);
+    logScrapeRun({
+      school: WORLD_CUP_EVENT_SOURCE,
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      ok: true,
+      foundCount,
+      newCount,
+    });
+    return { school: WORLD_CUP_EVENT_SOURCE, ok: true, foundCount, newCount };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    logScrapeRun({
+      school: WORLD_CUP_EVENT_SOURCE,
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      ok: false,
+      foundCount: 0,
+      newCount: 0,
+      error,
+    });
+    return { school: WORLD_CUP_EVENT_SOURCE, ok: false, foundCount: 0, newCount: 0, error };
   }
 }
 

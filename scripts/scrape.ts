@@ -1,11 +1,21 @@
-import { runAllScrapers, runEventScrape, runCommunityEventScrape, runSchoolEventScrape } from "../lib/scrapers/runAll";
+import {
+  runAllScrapers,
+  runEventScrape,
+  runCommunityEventScrape,
+  runSchoolEventScrape,
+  runWorldCupEventScrape,
+} from "../lib/scrapers/runAll";
 
 async function main() {
   console.log(`[${new Date().toISOString()}] Odświeżam grafiki zajęć i eventy...`);
   const classResults = await runAllScrapers();
   const eventResult = await runEventScrape(); // must finish before runSchoolEventScrape, which dedups against it
-  const [communityResult, schoolEventResult] = await Promise.all([runCommunityEventScrape(), runSchoolEventScrape()]);
-  const results = [...classResults, eventResult, communityResult, schoolEventResult];
+  const [communityResult, schoolEventResult, worldCupResult] = await Promise.all([
+    runCommunityEventScrape(),
+    runSchoolEventScrape(),
+    runWorldCupEventScrape(),
+  ]);
+  const results = [...classResults, eventResult, communityResult, schoolEventResult, worldCupResult];
 
   for (const r of results) {
     if (r.ok) {

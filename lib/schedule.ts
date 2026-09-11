@@ -27,6 +27,99 @@ export function displayDayOfWeek(row: ClassRow): number | undefined {
   return undefined;
 }
 
+function addLocalDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+/** True for rows that a school kept in its feed only to communicate a cancellation. */
+export function isCancelledClass(row: Pick<ClassRow, "title" | "location" | "description">): boolean {
+  const text = `${row.title} ${row.location ?? ""} ${row.description ?? ""}`
+    .toLocaleLowerCase("pl")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ł/g, "l");
+  return /\b(odwolane|odwolany|odwolana|cancelled|canceled)\b/.test(text);
+}
+
+/**
+ * Some school feeds put a one-off date only in the title ("26.09" or
+ * "17-18.10") while marking the row as weekly. Recover the first day so the
+ * class is not repeated on every matching weekday.
+ */
+export function specificDateFromTitle(title: string, referenceDate: Date): string | undefined {
+  const match = title.match(/\b([0-3]?\d)(?:\s*[-–]\s*[0-3]?\d)?[./]([01]?\d)(?:[./](20\d{2}))?\b/);
+  if (!match) return undefined;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  let year = match[3] ? Number(match[3]) : referenceDate.getFullYear();
+  let candidate = new Date(year, month - 1, day, 12);
+  if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) return undefined;
+
+  if (!match[3]) {
+    const reference = new Date(referenceDate);
+    reference.setHours(12, 0, 0, 0);
+    const daysInPast = (reference.getTime() - candidate.getTime()) / 86400000;
+    if (daysInPast > 180) {
+      year += 1;
+      candidate = new Date(year, month - 1, day, 12);
+    }
+  }
+  return toLocalIsoDate(candidate);
+}
+
+/**
+ * Calendar dates covered by the schedule's quick filters. Unlike a weekday-only
+ * filter this keeps one-off rows attached to their real date.
+ */
+export function scheduleDatesForFilter(dayFilter: string, today: Date): string[] {
+  const base = addLocalDays(today, 0);
+  if (dayFilter === "today") return [toLocalIsoDate(base)];
+  if (dayFilter === "tomorrow") return [toLocalIsoDate(addLocalDays(base, 1))];
+  if (dayFilter === "week") return Array.from({ length: 7 }, (_, index) => toLocalIsoDate(addLocalDays(base, index)));
+  if (dayFilter === "weekend") {
+    if (base.getDay() === 0) return [toLocalIsoDate(base)];
+    const saturdayOffset = (6 - base.getDay() + 7) % 7;
+    const saturday = addLocalDays(base, saturdayOffset);
+    return [toLocalIsoDate(saturday), toLocalIsoDate(addLocalDays(saturday, 1))];
+  }
+
+  const weekday = Number(dayFilter);
+  if (Number.isInteger(weekday) && weekday >= 1 && weekday <= 7) {
+    const currentWeekday = ((base.getDay() + 6) % 7) + 1;
+    return [toLocalIsoDate(addLocalDays(base, (weekday - currentWeekday + 7) % 7))];
+  }
+  return Array.from({ length: 7 }, (_, index) => toLocalIsoDate(addLocalDays(base, index)));
+}
+
+export interface ScheduleOccurrence {
+  row: ClassRow;
+  dateIso: string;
+}
+
+/** Expand recurring rows over the requested dates while keeping dated rows exact. */
+export function scheduleOccurrencesForDates(rows: ClassRow[], dates: string[]): ScheduleOccurrence[] {
+  const dateSet = new Set(dates);
+  const occurrences: ScheduleOccurrence[] = [];
+  for (const row of rows) {
+    if (row.specificDate) {
+      if (dateSet.has(row.specificDate)) occurrences.push({ row, dateIso: row.specificDate });
+      continue;
+    }
+    if (!row.dayOfWeek) continue;
+    for (const dateIso of dates) {
+      const jsDay = new Date(`${dateIso}T12:00:00`).getDay();
+      const weekday = ((jsDay + 6) % 7) + 1;
+      if (weekday === row.dayOfWeek) occurrences.push({ row, dateIso });
+    }
+  }
+  return occurrences.sort((a, b) =>
+    a.dateIso.localeCompare(b.dateIso) || (a.row.startTime ?? "").localeCompare(b.row.startTime ?? "")
+  );
+}
+
 export interface UpcomingClass {
   row: ClassRow;
   when: Date;

@@ -9,7 +9,7 @@ import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
 import { AddToPlanModal } from "@/components/AddToPlanModal";
 import { LevelDot, LevelBadge } from "@/components/LevelDot";
-import { PersonIcon } from "@/components/icons";
+import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
 
 const VIEWS = [
   { key: "lista", label: "Lista" },
@@ -75,7 +75,6 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
           {listItems.map(({ row, label }) => {
             const favoriteId = `${row.school}-${row.id}`;
             const instructorNames = splitInstructors(row.instructor);
-            const firstInstructorPhoto = row.instructorPhotos?.[instructorNames[0]];
             return (
               <div key={favoriteId} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0">
                 <div className="w-14 shrink-0">
@@ -95,12 +94,7 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
                 </div>
                 {instructorNames.length > 0 && (
                   <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted sm:flex">
-                    {firstInstructorPhoto ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-                      <img src={firstInstructorPhoto} alt="" className="h-5 w-5 rounded-full object-cover" />
-                    ) : (
-                      <PersonIcon className="h-4 w-4" />
-                    )}
+                    <InstructorAvatarGroup names={instructorNames} photos={row.instructorPhotos} sizeClassName="h-6 w-6" />
                     {instructorNames.map((name, i) => (
                       <span key={name}>
                         {i > 0 && ", "}

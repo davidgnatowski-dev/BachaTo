@@ -7,11 +7,12 @@ import { schoolStyle, formatDatePl, splitInstructors } from "@/lib/schedule";
 import { classifyLevel, levelStyle, LEVEL_BUCKET_ICONS } from "@/lib/level";
 import { FORMAT_LABELS, formatStyle } from "@/lib/format";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
-import { PinIcon, PersonIcon } from "@/components/icons";
+import { PinIcon } from "@/components/icons";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
 import { LevelDot } from "@/components/LevelDot";
 import { useFavorites } from "@/lib/favorites";
+import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
 
 export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[] }) {
   const [open, setOpen] = useState(false);
@@ -20,7 +21,6 @@ export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[]
   const levelColors = levelStyle(levelBucket);
   const formatColors = formatStyle(row.format);
   const instructorNames = splitInstructors(row.instructor);
-  const firstInstructorPhoto = row.instructorPhotos?.[instructorNames[0]];
   const { likedClassIds, plannedClassIds, toggleLikeClass, togglePlanClass } = useFavorites();
   const favoriteId = `${row.school}-${row.id}`;
 
@@ -76,12 +76,7 @@ export function ClassCard({ row, allRows }: { row: ClassRow; allRows: ClassRow[]
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
           {instructorNames.length > 0 && (
             <span className="inline-flex items-center gap-1">
-              {firstInstructorPhoto ? (
-                // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-                <img src={firstInstructorPhoto} alt="" className="h-3.5 w-3.5 rounded-full object-cover" />
-              ) : (
-                <PersonIcon className="h-3.5 w-3.5" />
-              )}
+              <InstructorAvatarGroup names={instructorNames} photos={row.instructorPhotos} sizeClassName="h-5 w-5" className="mr-1" />
               {instructorNames.map((name, i) => (
                 <span key={name}>
                   {i > 0 && ", "}

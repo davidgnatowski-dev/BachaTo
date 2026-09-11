@@ -11,6 +11,7 @@ import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
 import { LevelDot } from "@/components/LevelDot";
 import { useFavorites } from "@/lib/favorites";
+import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
 
 /**
  * One compact horizontal row (~72-90px) instead of the tall ClassCard —
@@ -23,7 +24,6 @@ export function CompactClassRow({ row, allRows }: { row: ClassRow; allRows: Clas
   const levelColors = levelStyle(levelBucket);
   const formatColors = formatStyle(row.format);
   const instructorNames = splitInstructors(row.instructor);
-  const firstInstructorPhoto = row.instructorPhotos?.[instructorNames[0]];
   const { likedClassIds, plannedClassIds, toggleLikeClass, togglePlanClass } = useFavorites();
   const favoriteId = `${row.school}-${row.id}`;
 
@@ -79,13 +79,8 @@ export function CompactClassRow({ row, allRows }: { row: ClassRow; allRows: Clas
           </p>
         </div>
 
-        {firstInstructorPhoto && (
-          // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-          <img
-            src={firstInstructorPhoto}
-            alt=""
-            className="hidden h-8 w-8 shrink-0 rounded-full object-cover sm:block"
-          />
+        {instructorNames.length > 0 && (
+          <InstructorAvatarGroup names={instructorNames} photos={row.instructorPhotos} className="hidden shrink-0 sm:inline-flex" />
         )}
 
         <div className="hidden shrink-0 items-center gap-1.5 sm:flex">

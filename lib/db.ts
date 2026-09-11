@@ -2,11 +2,12 @@ import path from "node:path";
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import type { ClassFormat, ClassRow, EventProgramItem, EventRow, ScrapedClass, ScrapedEvent, School } from "./types";
-import { splitInstructors } from "./schedule";
+import { isCancelledClass, specificDateFromTitle, splitInstructors } from "./schedule";
 import { SCHOOL_INFO } from "./schools";
 import { toLocalIsoDate } from "./format";
-import { eventDedupKey, eventProgramFavoriteId, EVENT_SOURCES } from "./events";
+import { applyCuratedEventOverride, eventDedupKey, eventProgramFavoriteId, EVENT_SOURCES, isCuratedEventSuppressed } from "./events";
 import { parseNotificationPreferences, type NotificationPreferences } from "./notificationPreferences";
+import { enrichInstructorProfiles } from "./instructorProfiles";
 
 const dataDir = path.join(process.cwd(), "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -217,6 +218,14 @@ ensureColumn("classes", "instructor_bios", `instructor_bios TEXT`);
 ensureColumn("classes", "instructor_photos", `instructor_photos TEXT`);
 ensureColumn("classes", "instructor_profile_urls", `instructor_profile_urls TEXT`);
 ensureColumn("events", "description", `description TEXT`);
+ensureColumn("events", "competition_series", `competition_series TEXT`);
+ensureColumn("events", "competition_stage", `competition_stage TEXT`);
+ensureColumn("events", "qualifies_for", `qualifies_for TEXT`);
+ensureColumn("events", "competition_parent_id", `competition_parent_id TEXT`);
+ensureColumn("events", "registration_status", `registration_status TEXT`);
+ensureColumn("events", "registration_price", `registration_price TEXT`);
+ensureColumn("events", "qualifying_spots_leaders", `qualifying_spots_leaders INTEGER`);
+ensureColumn("events", "qualifying_spots_followers", `qualifying_spots_followers INTEGER`);
 ensureColumn("events", "venue", `venue TEXT`);
 ensureColumn("events", "address", `address TEXT`);
 ensureColumn("events", "latitude", `latitude REAL`);
@@ -373,12 +382,19 @@ export function getCurrentSchedule(): ClassRow[] {
       instructorPhotosJson: string | null;
       instructorProfileUrlsJson: string | null;
     })[];
-  return rows.map(({ instructorBiosJson, instructorPhotosJson, instructorProfileUrlsJson, ...row }) => ({
-    ...row,
-    instructorBios: instructorBiosJson ? JSON.parse(instructorBiosJson) : undefined,
-    instructorPhotos: instructorPhotosJson ? JSON.parse(instructorPhotosJson) : undefined,
-    instructorProfileUrls: instructorProfileUrlsJson ? JSON.parse(instructorProfileUrlsJson) : undefined,
-  }));
+  return rows
+    .map(({ instructorBiosJson, instructorPhotosJson, instructorProfileUrlsJson, ...row }) => {
+      const inferredDate = row.specificDate ? undefined : specificDateFromTitle(row.title, new Date(`${today}T12:00:00`));
+      return enrichInstructorProfiles({
+        ...row,
+        dayOfWeek: inferredDate ? undefined : row.dayOfWeek,
+        specificDate: inferredDate ?? row.specificDate,
+        instructorBios: instructorBiosJson ? JSON.parse(instructorBiosJson) : undefined,
+        instructorPhotos: instructorPhotosJson ? JSON.parse(instructorPhotosJson) : undefined,
+        instructorProfileUrls: instructorProfileUrlsJson ? JSON.parse(instructorProfileUrlsJson) : undefined,
+      });
+    })
+    .filter((row) => !isCancelledClass(row));
 }
 
 export function getLastRunPerSchool(): Record<string, { finishedAt: string; ok: boolean; foundCount: number } | undefined> {
@@ -397,10 +413,14 @@ export function getLastRunPerSchool(): Record<string, { finishedAt: string; ok: 
 const upsertEventStmt = db.prepare(`
   INSERT INTO events (
     source, category, external_id, title, city, venue, address, latitude, longitude, organizer, cover_image,
-    description, start_date, end_date, people_json, program_json, source_url, first_seen_at, last_seen_at
+    description, competition_series, competition_stage, qualifies_for, competition_parent_id,
+    registration_status, registration_price, qualifying_spots_leaders, qualifying_spots_followers,
+    start_date, end_date, people_json, program_json, source_url, first_seen_at, last_seen_at
   ) VALUES (
     @source, @category, @externalId, @title, @city, @venue, @address, @latitude, @longitude, @organizer, @coverImage,
-    @description, @startDate, @endDate, @peopleJson, @programJson, @sourceUrl, @now, @now
+    @description, @competitionSeries, @competitionStage, @qualifiesFor, @competitionParentId,
+    @registrationStatus, @registrationPrice, @qualifyingSpotsLeaders, @qualifyingSpotsFollowers,
+    @startDate, @endDate, @peopleJson, @programJson, @sourceUrl, @now, @now
   )
   ON CONFLICT(source, external_id) DO UPDATE SET
     category = excluded.category,
@@ -413,6 +433,14 @@ const upsertEventStmt = db.prepare(`
     organizer = excluded.organizer,
     cover_image = excluded.cover_image,
     description = excluded.description,
+    competition_series = excluded.competition_series,
+    competition_stage = excluded.competition_stage,
+    qualifies_for = excluded.qualifies_for,
+    competition_parent_id = excluded.competition_parent_id,
+    registration_status = excluded.registration_status,
+    registration_price = excluded.registration_price,
+    qualifying_spots_leaders = excluded.qualifying_spots_leaders,
+    qualifying_spots_followers = excluded.qualifying_spots_followers,
     start_date = excluded.start_date,
     end_date = excluded.end_date,
     people_json = excluded.people_json,
@@ -450,6 +478,14 @@ export function saveScrapedEvents(source: string, items: ScrapedEvent[]): { foun
         organizer: item.organizer ?? null,
         coverImage: item.coverImage ?? null,
         description: item.description ?? null,
+        competitionSeries: item.competitionSeries ?? null,
+        competitionStage: item.competitionStage ?? null,
+        qualifiesFor: item.qualifiesFor ?? null,
+        competitionParentId: item.competitionParentId ?? null,
+        registrationStatus: item.registrationStatus ?? null,
+        registrationPrice: item.registrationPrice ?? null,
+        qualifyingSpotsLeaders: item.qualifyingSpotsLeaders ?? null,
+        qualifyingSpotsFollowers: item.qualifyingSpotsFollowers ?? null,
         startDate: item.startDate,
         endDate: item.endDate ?? null,
         peopleJson: item.people?.length ? JSON.stringify(item.people) : null,
@@ -472,6 +508,10 @@ type EventDbRow = Omit<EventRow, "people" | "programItems"> & { peopleJson: stri
 
 const EVENT_SELECT = `e.id, e.source, e.category, e.external_id as externalId, e.title, e.city, e.venue, e.address,
   e.latitude, e.longitude, e.organizer, e.cover_image as coverImage, e.description,
+  e.competition_series as competitionSeries, e.competition_stage as competitionStage, e.qualifies_for as qualifiesFor,
+  e.competition_parent_id as competitionParentId, e.registration_status as registrationStatus,
+  e.registration_price as registrationPrice, e.qualifying_spots_leaders as qualifyingSpotsLeaders,
+  e.qualifying_spots_followers as qualifyingSpotsFollowers,
   e.start_date as startDate, e.end_date as endDate, e.people_json as peopleJson, e.program_json as programJson,
   e.source_url as sourceUrl, e.first_seen_at as firstSeenAt, e.last_seen_at as lastSeenAt`;
 
@@ -497,12 +537,21 @@ export function getUpcomingEvents(): EventRow[] {
        ORDER BY e.start_date`
     )
     .all(today) as EventDbRow[];
-  return rows.map(hydrateEvent);
+  return rows.map(hydrateEvent).filter((row) => !isCuratedEventSuppressed(row)).map(applyCuratedEventOverride);
 }
 
 export function getEventBySourceAndId(source: string, id: number): EventRow | undefined {
   const row = db.prepare(`SELECT ${EVENT_SELECT} FROM events e WHERE e.source = ? AND e.id = ?`).get(source, id) as EventDbRow | undefined;
-  return row ? hydrateEvent(row) : undefined;
+  if (!row) return undefined;
+  const event = hydrateEvent(row);
+  return isCuratedEventSuppressed(event) ? undefined : applyCuratedEventOverride(event);
+}
+
+/** Direct qualification events belonging to an umbrella cup such as a continental cup. */
+export function getCompetitionChildren(event: EventRow): EventRow[] {
+  return getUpcomingEvents()
+    .filter((candidate) => candidate.source === event.source && candidate.competitionParentId === event.externalId)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
 export function getRelatedEvents(event: EventRow, limit = 3): EventRow[] {
@@ -568,6 +617,10 @@ export function getInstructors(): InstructorProfile[] {
   for (const row of getCurrentSchedule()) {
     const names = splitInstructors(row.instructor);
     for (const name of names) {
+      // Fitssey occasionally exposes a technical placeholder account instead
+      // of a real teacher. Keep it on the class for source fidelity, but do
+      // not create a misleading public instructor profile for it.
+      if (/^Instruktor\s+\d+\b/i.test(name)) continue;
       let profile = byName.get(name);
       if (!profile) {
         profile = { name, schools: [], classCount: 0, styles: [], levels: [] };

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { runAllScrapers, runEventScrape, runCommunityEventScrape, runSchoolEventScrape } from "@/lib/scrapers/runAll";
+import {
+  runAllScrapers,
+  runEventScrape,
+  runCommunityEventScrape,
+  runSchoolEventScrape,
+  runWorldCupEventScrape,
+} from "@/lib/scrapers/runAll";
 
 /**
  * Manual scrape trigger. This runs headless browsers and hits several
@@ -22,6 +28,10 @@ export async function POST(request: Request) {
   }
   const [classResults, eventResult] = await Promise.all([runAllScrapers(), runEventScrape()]);
   // Must run after runEventScrape() resolves — it dedups school-site events against fresh Tensy data.
-  const [communityResult, schoolEventResult] = await Promise.all([runCommunityEventScrape(), runSchoolEventScrape()]);
-  return NextResponse.json({ results: [...classResults, eventResult, communityResult, schoolEventResult] });
+  const [communityResult, schoolEventResult, worldCupResult] = await Promise.all([
+    runCommunityEventScrape(),
+    runSchoolEventScrape(),
+    runWorldCupEventScrape(),
+  ]);
+  return NextResponse.json({ results: [...classResults, eventResult, communityResult, schoolEventResult, worldCupResult] });
 }

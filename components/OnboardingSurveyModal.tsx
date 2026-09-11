@@ -6,32 +6,16 @@ import { LEVEL_BUCKET_ORDER, LEVEL_BUCKET_LABELS, type LevelBucket } from "@/lib
 import { FORMAT_LABELS } from "@/lib/format";
 import type { ClassFormat } from "@/lib/types";
 import { submitOnboardingSurvey, skipOnboardingSurveyAction } from "@/app/actions/preferences";
+import { HourSelect } from "@/components/HourSelect";
 
 const SHORT_DAY_LABELS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
 const SELECTABLE_FORMATS: ClassFormat[] = ["partner", "solo"];
 // Covers the real spread of class start times (a handful before 17:00, the bulk from 17:00 on).
-const TIME_FROM_OPTIONS = [
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
-  "20:00",
-  "21:00",
-];
 const DEFAULT_TIME_FROM = "17:00";
-const ALL = "all";
 
 const CHIP_BASE = "rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors";
 const CHIP_ACTIVE = "border-accent bg-accent text-white";
 const CHIP_INACTIVE = "border-line bg-black/40 text-zinc-200 hover:border-zinc-500";
-const SELECT_CLASS =
-  "rounded-full border border-line bg-black/40 px-3 py-1.5 text-sm text-zinc-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
 
 /**
  * One-screen, ~30-second survey shown once to a freshly logged-in user
@@ -151,21 +135,9 @@ export function OnboardingSurveyModal() {
                 );
               })}
             </div>
-            <label className="mt-2.5 flex items-center gap-2 text-xs text-muted">
-              Od godziny
-              <select
-                value={timeFrom ?? ALL}
-                onChange={(e) => setTimeFrom(e.target.value === ALL ? null : e.target.value)}
-                className={SELECT_CLASS}
-              >
-                <option value={ALL}>Dowolna</option>
-                {TIME_FROM_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {Number(t.slice(0, 2))}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="mt-2.5">
+              <HourSelect label="Od godziny" value={timeFrom} onChange={setTimeFrom} />
+            </div>
           </div>
         </div>
 

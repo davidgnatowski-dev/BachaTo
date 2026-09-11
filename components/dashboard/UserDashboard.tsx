@@ -13,12 +13,13 @@ import { BadgesGrid } from "@/components/BadgesGrid";
 import { LevelDot, LevelBadge } from "@/components/LevelDot";
 import { eventHref, eventProgramFavoriteId } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
-import { nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
+import { displayDayOfWeek, nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { useFavorites } from "@/lib/favorites";
 import { HeartButton } from "@/components/HeartButton";
 import { PlusButton } from "@/components/PlusButton";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { UpcomingEventsPreview } from "@/components/UpcomingEventsPreview";
+import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
 import {
   CalendarIcon,
   CheckIcon,
@@ -26,7 +27,6 @@ import {
   ChevronRightIcon,
   ClockIcon,
   HeartIcon,
-  PersonIcon,
   PlusIcon,
 } from "@/components/icons";
 import { DashboardBottomNav, DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
@@ -188,7 +188,7 @@ function recommendationScore(row: ClassRow, preferences: UserPreferences) {
   const reasons: string[] = [];
   if (preferences.levels.some((level) => levelMatches(row.level, level)) || levelMatches(row.level, preferences.level)) { score += 5; reasons.push("Twój poziom"); }
   if (preferences.formats.includes(row.format)) { score += 3; reasons.push(row.format === "solo" ? "lubisz solo" : "lubisz zajęcia w parach"); }
-  if (preferences.days.includes(row.dayOfWeek ?? 0)) { score += 2; reasons.push("pasuje dzień"); }
+  if (preferences.days.includes(displayDayOfWeek(row) ?? 0)) { score += 2; reasons.push("pasuje dzień"); }
   if (preferences.styles.some((style) => normalized(row.title).includes(normalized(style)) || normalized(row.danceStyle).includes(normalized(style)))) {
     score += 4;
     reasons.push("ulubiony styl");
@@ -589,9 +589,9 @@ function MyPlanSection({
           {groups.map(([date, items]) => {
             const day = new Date(`${date}T12:00:00`);
             return (
-              <div key={date} className="grid border-b border-line last:border-b-0 sm:grid-cols-[92px_minmax(0,1fr)]">
+              <div key={date} className="grid border-b border-line last:border-b-0 sm:grid-cols-[132px_minmax(0,1fr)]">
                 <div className="border-b border-line/70 bg-zinc-950/35 px-4 py-3 sm:border-b-0 sm:border-r sm:px-5 sm:py-4">
-                  <p className={`text-sm font-semibold ${sameDay(day, now) ? "text-accent" : "text-zinc-200"}`}>{formatDayLabel(day, now)}</p>
+                  <p className={`whitespace-nowrap text-sm font-semibold ${sameDay(day, now) ? "text-accent" : "text-zinc-200"}`}>{formatDayLabel(day, now)}</p>
                   <p className="mt-0.5 text-xs tabular-nums text-muted">{formatShortDate(day)}</p>
                 </div>
                 <div className="divide-y divide-line">
@@ -645,7 +645,6 @@ function SharePlanButton({ items, label }: { items: PlanItem[]; label: string })
 
 function PlanClassRow({ item, liked, onLike, onRemove, onOpenClass }: { item: PlanItem; liked: boolean; onLike: () => void; onRemove: () => void; onOpenClass: (row: ClassRow) => void }) {
   const names = splitInstructors(item.instructor ?? undefined);
-  const photo = item.row?.instructorPhotos?.[names[0]];
   return (
     <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
       <div className="w-12 shrink-0 self-start pt-0.5">
@@ -661,16 +660,20 @@ function PlanClassRow({ item, liked, onLike, onRemove, onOpenClass }: { item: Pl
         <p className="mt-1 truncate text-xs text-muted">
           {item.school && <span className={schoolTextClass(item.school)}>{item.school}</span>}
           {item.school && item.instructor ? " · " : ""}
-          {item.instructor}
+          {item.row
+            ? names.map((name, index) => (
+                <span key={name}>
+                  {index > 0 && ", "}
+                  <Link href={`/instruktorzy/${encodeURIComponent(name)}`} className="hover:text-zinc-200 hover:underline">
+                    {name}
+                  </Link>
+                </span>
+              ))
+            : item.instructor}
         </p>
       </div>
-      {names.length > 0 && (
-        photo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- source URLs come from the existing school data
-          <img src={photo} alt="" className="hidden h-8 w-8 shrink-0 rounded-full object-cover sm:block" />
-        ) : (
-          <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-muted sm:flex"><PersonIcon className="h-4 w-4" /></span>
-        )
+      {item.row && names.length > 0 && (
+        <InstructorAvatarGroup names={names} photos={item.row.instructorPhotos} sizeClassName="h-10 w-10" className="hidden shrink-0 sm:inline-flex" />
       )}
       {item.kind === "class" && <HeartButton active={liked} onToggle={onLike} />}
       <details className="relative shrink-0">

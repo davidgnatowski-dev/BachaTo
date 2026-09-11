@@ -31,9 +31,12 @@ export async function requestPasswordReset(
   const expiresAt = new Date(Date.now() + RESET_TOKEN_MINUTES * 60 * 1000).toISOString();
   createPasswordReset(user.id, token, expiresAt);
 
-  // TODO: once an email service is configured, send this link instead of returning it.
-  const devResetUrl = `/resetuj-haslo/${token}`;
-  return { message: GENERIC_MESSAGE, devResetUrl };
+  // Until an email service is configured, expose the link only during local development.
+  // Returning it in production would let anyone reset a known user's password.
+  if (process.env.NODE_ENV !== "production") {
+    return { message: GENERIC_MESSAGE, devResetUrl: `/resetuj-haslo/${token}` };
+  }
+  return { message: GENERIC_MESSAGE };
 }
 
 export async function confirmPasswordReset(

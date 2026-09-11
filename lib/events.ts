@@ -1,7 +1,7 @@
 import type { EventCategory, EventRow } from "./types";
 
 /** Every non-school scrape_runs source that feeds the events pages — used both to display per-source status and to exclude these from any "schools" listing. */
-export const EVENT_SOURCES = ["Tensy", "Społeczność", "Szkoły"] as const;
+export const EVENT_SOURCES = ["Tensy", "Społeczność", "Szkoły", "Bachata Social World Cup"] as const;
 
 export const CATEGORY_LABELS: Record<EventCategory, string> = {
   festival: "Festiwal",
@@ -212,6 +212,180 @@ export function eventDedupKey(title: string, startDate: string): string {
     .replace(/\s+/g, " ")
     .trim();
   return `${normalized}|${startDate}`;
+}
+
+export interface CompetitionSeriesGroup {
+  name: string;
+  qualifiers: EventRow[];
+  finals: EventRow[];
+}
+
+/** Splits a competition listing into connected qualification paths and standalone contests. */
+export function groupCompetitionSeries(rows: EventRow[]): {
+  series: CompetitionSeriesGroup[];
+  standalone: EventRow[];
+} {
+  const bySeries = new Map<string, CompetitionSeriesGroup>();
+  const standalone: EventRow[] = [];
+
+  for (const row of rows) {
+    if (!row.competitionSeries || !row.competitionStage) {
+      standalone.push(row);
+      continue;
+    }
+    const group = bySeries.get(row.competitionSeries) ?? {
+      name: row.competitionSeries,
+      qualifiers: [],
+      finals: [],
+    };
+    (row.competitionStage === "final" ? group.finals : group.qualifiers).push(row);
+    bySeries.set(row.competitionSeries, group);
+  }
+
+  const byDate = (a: EventRow, b: EventRow) => a.startDate.localeCompare(b.startDate);
+  const series = Array.from(bySeries.values())
+    .map((group) => ({
+      ...group,
+      qualifiers: group.qualifiers.sort(byDate),
+      finals: group.finals.sort(byDate),
+    }))
+    .sort((a, b) => {
+      const aDate = a.qualifiers[0]?.startDate ?? a.finals[0]?.startDate ?? "9999";
+      const bDate = b.qualifiers[0]?.startDate ?? b.finals[0]?.startDate ?? "9999";
+      return aDate.localeCompare(bDate);
+    });
+
+  return { series, standalone: standalone.sort(byDate) };
+}
+
+/**
+ * Editorial corrections verified against Warsaw Bachata Meet Up's official
+ * Facebook event pages. The underlying Tensy IDs remain stable, while these
+ * fields keep dates, names and the organizer's direct link current without
+ * creating a second card for the same event.
+ */
+const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
+  "Tensy:b61d6005-6f3e-42be-a7bc-54684f6ba2c7": {
+    title: "10. edycja konkursu Jack & Jill — miejsca dla Followerów wyprzedane",
+    city: "Warszawa",
+    organizer: "Warsaw Bachata Meet Up",
+    description:
+      "Amatorski konkurs Jack & Jill (osoby uczące nie mogą startować). Sobota 26.09, 14:00–00:30. Miejsca dla Followerów są wyprzedane.",
+    endDate: "2026-09-27",
+    sourceUrl: "https://www.facebook.com/events/1474686464380744/",
+  },
+  "Tensy:fd984081-038f-42bd-9d71-786754a099f4": {
+    title: "BACHATA LADIES & MEN WEEKEND vol 4 — 26–27.09.2026",
+    city: "Warszawa",
+    venue: "DanceBook Academy Ochota",
+    organizer: "Warsaw Bachata Meet Up",
+    description: "Czwarta edycja tanecznego weekendu Ladies & Men. Sobota 26.09 od 10:00 do niedzieli 27.09 do 23:59.",
+    endDate: "2026-09-27",
+    sourceUrl: "https://www.facebook.com/events/1547902979716877/",
+  },
+  "Tensy:ec6d6305-e8fa-4424-a7fd-00f9fc8d40bd": {
+    title: "World Bachata Meet Up! — OFFICIAL EVENT",
+    city: "Warszawa",
+    venue: "Warszawski Dom Technika NOT",
+    address: "ul. Tadeusza Czackiego 3/5, 00-043 Warszawa",
+    organizer: "Warsaw Bachata Meet Up",
+    description:
+      "Trzy dni warsztatów, cztery nocne imprezy, pokazy oraz światowe finały Social Competition. Od piątku 27.11 o 19:00 do poniedziałku 30.11 o 01:00.",
+    endDate: "2026-11-30",
+    sourceUrl: "https://www.facebook.com/events/1213946207270095/",
+  },
+  "Tensy:c6301c1a-ceb1-48b1-9cf4-7032cf2cdb3e": {
+    title: "WTF Bachata Social Competition 2026",
+    city: "Gdańsk",
+    organizer: "So!Salsa — Solidarity of Salsa",
+    description:
+      "Piąta edycja otwartego konkursu bachaty social. Rejestracja jest indywidualna, partnerzy są losowani, a jury ocenia osobno Leaderów i Followerów. Style muzyczne: sensual, remix i dominicana. Eliminacje odbędą się w piątek, półfinał w sobotniej przerwie obiadowej, a finał podczas sobotniej gali. Opłata wynosi 60 zł z pełnym karnetem festiwalowym (Full Pass) lub karnetem imprezowym (Party Pass) oraz 100 zł bez karnetu.",
+    sourceUrl: "https://www.shop.sosalsa.pl/produkt/wtfcompetition-",
+  },
+  "Bachata Social World Cup:poland-qualifier-warsaw-2026": {
+    title: "Eliminacje Bachata Social World Cup — Polska 2026",
+    city: "Warszawa",
+    venue: "elSol Fall Festival",
+    organizer: "Bachata Social World Cup · elSol Festival",
+    description:
+      "Polskie eliminacje profesjonalne do finału Bachata Social World Cup 2027 w Genewie. Rejestracja jest indywidualna, a partnerzy zmieniają się w formule inspirowanej Jack & Jill. Eliminacje i półfinał odbędą się w sobotę 14 listopada, a finał w niedzielę 15 listopada. Zwycięski Leader i zwycięski Follower otrzymają awans przypisany do nich — nie można przekazać go innej osobie. Jury ocenia m.in. rytm, technikę, kontrolę ciała, kontakt w parze, komunikację, umiejętność dopasowania się do partnera, muzykalność, kreatywność i komfort partnera. Wymagany jest karnet festiwalowy obejmujący sobotę i niedzielę; sam bilet na imprezę nie wystarcza. Opłata konkursowa: 25 euro.",
+    startDate: "2026-11-13",
+    endDate: "2026-11-15",
+    competitionSeries: "Bachata Social World Cup 2026/2027",
+    competitionStage: "qualifier",
+    qualifiesFor: "Finał Bachata Social World Cup 2027 w Genewie",
+    sourceUrl: "https://bachatasocialworldcup.com/qualifiers/poland-qualifier-warsaw-2026",
+  },
+  "Bachata Social World Cup:world-cup-finals-2027": {
+    title: "Finał Bachata Social World Cup 2027",
+    city: "Genewa",
+    organizer: "Bachata Social World Cup",
+    description:
+      "Światowy finał sezonu 2026/2027 w Genewie dla 180 zakwalifikowanych tancerzy z ponad 50 krajów: 90 Leaderów i 90 Followerów. Pula nagród wynosi 3000 euro. Do finału można dostać się przez eliminacje europejskie i międzykontynentalne, prekwalifikacje w Genewie oraz eliminacje Elite. Awans jest przypisany do zwycięzcy i nie można przekazać go innej osobie. Jeśli zakwalifikowany tancerz ponownie zajmie miejsce premiowane awansem, miejsce przechodzi na kolejną uprawnioną osobę. Uczestnicy otrzymują zaproszenie e-mail i dostęp do panelu, a udział w finale wymaga osobnej opłaty.",
+    startDate: "2027-10-08",
+    endDate: "2027-10-11",
+    competitionSeries: "Bachata Social World Cup 2026/2027",
+    competitionStage: "final",
+    sourceUrl: "https://bachatasocialworldcup.com/qualifiers/world-cup-finals-2027",
+  },
+  "Bachata Social World Cup:bachata-social-south-american-cup-2027": {
+    title: "Puchar Ameryki Południowej Bachata Social 2027",
+    city: "Ameryka Południowa",
+    organizer: "Bachata Social World Cup",
+    description:
+      "To cykl czterech osobnych eliminacji, a nie jedno wydarzenie trwające od maja do lipca. Aby wziąć udział, wybierz eliminację w Boliwii, Wenezueli, Kolumbii albo Urugwaju i zapisz się na jej oficjalnej stronie. Łącznie do światowego finału w Genewie awansuje 6 Leaderów i 6 Followerów.",
+    competitionSeries: "Bachata Social World Cup 2026/2027",
+    competitionStage: "qualifier",
+    qualifiesFor: "Finał Bachata Social World Cup 2027 w Genewie",
+    registrationStatus: "through_qualifiers",
+    qualifyingSpotsLeaders: 6,
+    qualifyingSpotsFollowers: 6,
+    sourceUrl: "https://bachatasocialworldcup.com/qualifiers/bachata-social-south-american-cup-2027",
+  },
+  "Bachata Social World Cup:bolivia-qualifier-2027": {
+    title: "Eliminacje w Boliwii — La Paz",
+    competitionParentId: "bachata-social-south-american-cup-2027",
+    registrationStatus: "open",
+    registrationPrice: "20 USD",
+    qualifyingSpotsLeaders: 1,
+    qualifyingSpotsFollowers: 1,
+  },
+  "Bachata Social World Cup:venezuela-qualifier-2027": {
+    title: "Eliminacje w Wenezueli — Maracay",
+    competitionParentId: "bachata-social-south-american-cup-2027",
+    registrationStatus: "open",
+    registrationPrice: "35 USD",
+    qualifyingSpotsLeaders: 1,
+    qualifyingSpotsFollowers: 1,
+  },
+  "Bachata Social World Cup:colombia-qualifier-2027": {
+    title: "Eliminacje w Kolumbii — Bogota",
+    competitionParentId: "bachata-social-south-american-cup-2027",
+    registrationStatus: "closed",
+    qualifyingSpotsLeaders: 3,
+    qualifyingSpotsFollowers: 3,
+  },
+  "Bachata Social World Cup:uruguay-qualifier-2027": {
+    title: "Eliminacje w Urugwaju — Montevideo",
+    competitionParentId: "bachata-social-south-american-cup-2027",
+    registrationStatus: "open",
+    registrationPrice: "25 USD",
+    qualifyingSpotsLeaders: 1,
+    qualifyingSpotsFollowers: 1,
+  },
+};
+
+const CURATED_EVENT_SUPPRESSIONS = new Set([
+  // Tensy still carries an obsolete 20.02 date; Salsa Libre confirms 06.03.2027.
+  "Tensy:42f09c3c-a8a1-4e10-a4a8-597c17bc65af",
+]);
+
+export function isCuratedEventSuppressed(row: Pick<EventRow, "source" | "externalId">): boolean {
+  return CURATED_EVENT_SUPPRESSIONS.has(`${row.source}:${row.externalId}`);
+}
+
+export function applyCuratedEventOverride(row: EventRow): EventRow {
+  return { ...row, ...(CURATED_EVENT_OVERRIDES[`${row.source}:${row.externalId}`] ?? {}) };
 }
 
 /** Polish plural forms for "wydarzenie" (event): 1 / 2-4 / 5+. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LEVEL_BUCKET_ORDER, LEVEL_BUCKET_LABELS, type LevelBucket } from "@/lib/level";
 import type { School } from "@/lib/types";
@@ -17,6 +17,12 @@ export function QuickFilterBar({ schools, styles }: { schools: School[]; styles:
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showMore, setShowMore] = useState(false);
+  const searchParamsKey = searchParams.toString();
+  const pendingSearchParams = useRef(searchParamsKey);
+
+  useEffect(() => {
+    pendingSearchParams.current = searchParamsKey;
+  }, [searchParamsKey]);
 
   const day = searchParams.get("day") ?? "today";
   const school = searchParams.get("school") ?? ALL;
@@ -24,10 +30,12 @@ export function QuickFilterBar({ schools, styles }: { schools: School[]; styles:
   const style = searchParams.get("style") ?? ALL;
 
   function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(pendingSearchParams.current);
     if (value === ALL) params.delete(key);
     else params.set(key, value);
-    router.push(`/grafik?${params.toString()}`);
+    const nextParams = params.toString();
+    pendingSearchParams.current = nextParams;
+    router.push(nextParams ? `/grafik?${nextParams}` : "/grafik");
   }
 
   function dayButton(key: string, label: string) {

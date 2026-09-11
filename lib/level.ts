@@ -33,13 +33,15 @@ export const LEVEL_BUCKET_LABELS: Record<LevelBucket, string> = {
 export function classifyLevel(raw: string | undefined | null): LevelBucket {
   if (!raw) return "unknown";
   const s = raw.toLowerCase();
+  const normalized = s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
-  if (s.includes("master")) return "master";
-  if (s.includes("open")) return "open";
-  if (s.includes("początkujący") || s.includes("od zera") || s.includes("starter")) return "starter";
-  if (s.includes("średniozaawansowany")) return "intermediate";
-  if (s.includes("zaawansowany")) return "advanced";
-  if (s.includes("podstawowy")) return "elementary";
+  if (normalized.includes("open")) return "open";
+  if (/pre[\s-]*master/.test(normalized)) return "advanced";
+  if (normalized.includes("master")) return "master";
+  if (normalized.includes("poczatkujacy") || normalized.includes("od zera") || normalized.includes("starter") || normalized.includes("beginner")) return "starter";
+  if (/srednio[\s-]*zaawansowan/.test(normalized) || normalized.includes("intermediate")) return "intermediate";
+  if (normalized.includes("zaawansowan") || normalized.includes("advanced")) return "advanced";
+  if (normalized.includes("podstawowy") || normalized.includes("improver")) return "elementary";
 
   const pMatch = s.match(/\bp-?(\d)\b/);
   if (pMatch) {

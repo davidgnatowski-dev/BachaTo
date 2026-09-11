@@ -4,8 +4,8 @@ import { getCurrentSchedule, getInstructors } from "@/lib/db";
 import { splitInstructors, nextOccurrences, pluralizeClasses, schoolTextClass } from "@/lib/schedule";
 import { Header } from "@/components/Header";
 import { UpcomingClassList } from "@/components/UpcomingClassList";
-import { PersonIcon } from "@/components/icons";
 import { InstructorFollowButton } from "@/components/InstructorFollowButton";
+import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +34,7 @@ export default async function InstructorProfilePage({ params }: { params: Promis
       <Header />
 
       <div className="flex items-start gap-4">
-        {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-          <img src={photoUrl} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-muted">
-            <PersonIcon className="h-8 w-8" />
-          </span>
-        )}
+        <InstructorAvatar name={name} photoUrl={photoUrl} sizeClassName="h-20 w-20" linked={false} />
         <div className="min-w-0">
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">{name}</h1>
           <p className="mt-0.5 text-sm font-medium">

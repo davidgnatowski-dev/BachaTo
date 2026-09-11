@@ -12,26 +12,26 @@ export function BadgesGrid({ badges, compact = false }: { badges: Badge[]; compa
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Odznaki</p>
         <p className="text-xs text-muted">{earned.length} / {badges.length}</p>
       </div>
-      <div className={`mt-3 grid gap-2.5 ${compact ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-2 sm:grid-cols-3"}`}>
+      <div className={`mt-3 grid ${compact ? "grid-cols-2 gap-2" : "grid-cols-2 gap-2.5 sm:grid-cols-3"}`}>
         {shown.map((badge) => (
           <div
             key={badge.id}
             title={`${badge.label} — ${badge.description}`}
-            className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center ${
+            className={`min-w-0 rounded-xl border ${compact ? "flex items-center gap-2 p-2.5 text-left" : "flex flex-col items-center gap-1 p-3 text-center"} ${
               badge.earned
-                ? "border-violet/40 bg-violet/10"
+                ? "border-violet/50 bg-gradient-to-br from-violet/15 to-violet/5"
                 : "border-line bg-zinc-950/40 opacity-60"
             }`}
           >
-            <span className={`text-2xl leading-none ${badge.earned ? "" : "grayscale"}`} aria-hidden="true">
+            <span className={`shrink-0 leading-none ${compact ? "text-xl" : "text-2xl"} ${badge.earned ? "" : "grayscale"}`} aria-hidden="true">
               {badge.icon}
             </span>
-            <span className="text-[11px] font-semibold leading-tight text-zinc-200">{badge.label}</span>
-            {!compact && (
-              <span className="text-[10px] leading-tight text-muted">
+            <span className={compact ? "min-w-0 flex-1" : ""}>
+              <span className="block break-words text-[11px] font-semibold leading-tight text-zinc-200">{badge.label}</span>
+              <span className="mt-0.5 block text-[10px] leading-tight text-muted">
                 {badge.earned ? "Zdobyta" : `${Math.round(badge.progress * 100)}%`}
               </span>
-            )}
+            </span>
           </div>
         ))}
       </div>

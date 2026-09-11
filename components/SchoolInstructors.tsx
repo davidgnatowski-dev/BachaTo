@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PersonIcon } from "@/components/icons";
+import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 export interface SchoolInstructorSummary {
   name: string;
@@ -21,14 +21,7 @@ export function SchoolInstructors({ instructors }: { instructors: SchoolInstruct
             href={`/instruktorzy/${encodeURIComponent(instructor.name)}`}
             className="flex w-32 shrink-0 flex-col items-center gap-2.5 text-center transition-opacity hover:opacity-80"
           >
-            {instructor.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-              <img src={instructor.photoUrl} alt="" className="h-[90px] w-[90px] rounded-full object-cover" />
-            ) : (
-              <span className="flex h-[90px] w-[90px] items-center justify-center rounded-full bg-zinc-800 text-muted">
-                <PersonIcon className="h-9 w-9" />
-              </span>
-            )}
+            <InstructorAvatar name={instructor.name} photoUrl={instructor.photoUrl} sizeClassName="h-[90px] w-[90px]" linked={false} />
             <div className="min-w-0">
               <p className="line-clamp-2 break-words text-sm font-semibold leading-snug text-foreground">{instructor.name}</p>
               {instructor.primaryStyle && (

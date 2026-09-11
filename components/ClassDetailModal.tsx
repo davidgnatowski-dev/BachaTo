@@ -10,10 +10,11 @@ import { SCHOOL_INFO } from "@/lib/schools";
 import { recentClassOccurrence } from "@/lib/calendar";
 import { useFavorites } from "@/lib/favorites";
 import { useActivity } from "@/lib/activity";
-import { ExternalLinkIcon, PersonIcon, CheckIcon } from "@/components/icons";
+import { ExternalLinkIcon, CheckIcon } from "@/components/icons";
 import { PlusButton } from "@/components/PlusButton";
 import { HeartButton } from "@/components/HeartButton";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
+import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 const PILL_CLASS =
   "flex shrink-0 items-center gap-1 rounded-full border border-line bg-black/40 px-2.5 py-1 text-xs font-semibold text-zinc-200 transition-colors hover:border-violet/50 hover:text-violet";
@@ -142,7 +143,11 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
 
         {/* Main actions */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <PlusButton label="Dodaj do mojego planu" active={planned} onToggle={togglePlan} />
+          <PlusButton
+            label={row.specificDate ? "Dodaj ten termin do planu" : "Dodaj cotygodniowo do planu"}
+            active={planned}
+            onToggle={togglePlan}
+          />
           <HeartButton label="Dodaj do ulubionych" active={likedClassIds.has(favoriteId)} onToggle={() => toggleLikeClass(favoriteId)} />
           <AddToCalendarButton row={row} />
           <a href={row.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-dark">
@@ -192,14 +197,7 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
                 const fallbackBio = styles.length > 0 ? `Prowadzi zajęcia: ${styles.join(", ")}.` : undefined;
                 return (
                   <div key={name} className="flex gap-3 rounded-lg border border-line bg-black/20 p-3">
-                    {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- external, unpredictable remote host per school
-                      <img src={photo} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-muted">
-                        <PersonIcon className="h-5 w-5" />
-                      </span>
-                    )}
+                    <InstructorAvatar name={name} photoUrl={photo} sizeClassName="h-12 w-12" />
                     <div className="min-w-0 flex-1">
                       <p className="font-heading text-sm font-semibold text-zinc-50">{name}</p>
                       <p className={`text-xs ${schoolTextClass(row.school)}`}>{row.school}</p>

@@ -149,6 +149,15 @@ export function EventStructuredDetails({ event, loggedIn, attendedSessionIds }: 
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">O wydarzeniu</p>
             <h2 className="mt-1 font-heading text-xl font-semibold text-zinc-50">Najważniejsze informacje</h2>
+            {event.competitionSeries && event.competitionStage && (
+              <div className={`mt-4 rounded-2xl border p-4 ${event.competitionStage === "final" ? "border-amber-700/40 bg-amber-950/20" : "border-sky-700/40 bg-sky-950/20"}`}>
+                <p className={`text-xs font-bold uppercase tracking-[0.14em] ${event.competitionStage === "final" ? "text-amber-300" : "text-sky-300"}`}>
+                  {event.competitionStage === "final" ? "Finał cyklu" : "Eliminacje do finału"}
+                </p>
+                <p className="mt-1 font-heading text-base font-semibold text-zinc-100">{event.competitionSeries}</p>
+                {event.qualifiesFor && <p className="mt-2 text-sm text-zinc-300">Awans do: {event.qualifiesFor}</p>}
+              </div>
+            )}
             {description ? <p className="mt-4 whitespace-pre-line text-sm leading-7 text-zinc-300">{description}</p> : <p className="mt-4 text-sm text-muted">Organizator nie udostępnił jeszcze szerszego opisu.</p>}
           </div>
         )}

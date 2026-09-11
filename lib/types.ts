@@ -47,6 +47,8 @@ export interface ScrapeResult {
 
 /** A one-off dance event (festival, multi-day trip/camp, party/social, or competition), sourced from Tensy — Poland-wide, not limited to Warsaw. */
 export type EventCategory = "festival" | "trip" | "social" | "competition";
+export type CompetitionStage = "qualifier" | "final";
+export type EventRegistrationStatus = "open" | "closed" | "pending" | "through_qualifiers";
 
 export interface EventPerson {
   id: string;
@@ -79,6 +81,17 @@ export interface ScrapedEvent {
   organizer?: string;
   coverImage?: string;
   description?: string;
+  /** Shared label used to present qualifiers and their final as one competition path. */
+  competitionSeries?: string;
+  competitionStage?: CompetitionStage;
+  /** Human-readable final reached through this qualifier. */
+  qualifiesFor?: string;
+  /** External ID of an umbrella cup whose entry path consists of this event. */
+  competitionParentId?: string;
+  registrationStatus?: EventRegistrationStatus;
+  registrationPrice?: string;
+  qualifyingSpotsLeaders?: number;
+  qualifyingSpotsFollowers?: number;
   startDate: string; // ISO date (YYYY-MM-DD)
   endDate?: string; // ISO date (YYYY-MM-DD)
   people?: EventPerson[];
