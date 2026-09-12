@@ -373,6 +373,13 @@ const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
     qualifyingSpotsLeaders: 1,
     qualifyingSpotsFollowers: 1,
   },
+  // Salsa Libre's own event page has no poster with the corrected date (the
+  // only graphic on the page still shows the superseded 20.02 date — see the
+  // Tensy suppression above). Using a real, undated photo from a past
+  // edition instead, so the card never contradicts the current 06.03.2027 date.
+  "Szkoły:2027-03-06-Bachata Libre Competition 2027": {
+    coverImage: "/events/comp-salsalibre.jpg",
+  },
 };
 
 const CURATED_EVENT_SUPPRESSIONS = new Set([

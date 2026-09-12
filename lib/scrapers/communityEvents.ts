@@ -255,6 +255,7 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     venue: "Verdi Budapest Aquincum Hotel",
     address: "Árpád fejedelem útja 94, H-1036 Budapeszt, Węgry",
     organizer: "All Stars Festival",
+    coverImage: "/events/comp-budapest2027.jpg",
     description:
       "Konkursy Jack & Jill oraz solo podczas piątej edycji festiwalu poświęconego wyłącznie bachacie. Szczegółowe kategorie, harmonogram i regulamin nie zostały jeszcze opublikowane; opis zostanie uzupełniony na podstawie strony organizatora.",
     startDate: "2027-02-26",
@@ -295,6 +296,9 @@ const ONE_OFF_EVENTS: ScrapedEvent[] = [
     title: "Athens Bachata Congress 2027 — konkurs Jack & Jill",
     city: "Ateny",
     organizer: "Athens Bachata Congress",
+    // No 2027 poster published yet — an undated crowd/dance photo from a
+    // past edition (no baked-in date, so it can't contradict this one).
+    coverImage: "/events/comp-athens.jpg",
     description:
       "Konkurs Jack & Jill podczas trzeciej edycji Athens Bachata Congress. Organizator potwierdził konkurs w programie wydarzenia; dokładny dzień, godziny i regulamin nie zostały jeszcze opublikowane.",
     startDate: "2027-04-23",
