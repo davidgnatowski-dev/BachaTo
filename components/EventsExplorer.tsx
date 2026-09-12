@@ -12,6 +12,8 @@ import { ChevronDownIcon } from "@/components/icons";
 const COLLAPSE_THRESHOLD = 6;
 
 const ALL = "all";
+/** The country filter opens scoped to Poland — most visitors care about local events; "Wszystkie" is one click away. */
+const DEFAULT_COUNTRY = "Polska";
 type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "week" | "month";
 
 const SELECT_CLASS =
@@ -99,7 +101,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
       (initialCategory && (CATEGORY_ORDER as string[]).includes(initialCategory) ? initialCategory : ALL)
   );
   const city = searchParams.get("city") ?? ALL;
-  const country = searchParams.get("country") ?? ALL;
+  const country = searchParams.get("country") ?? DEFAULT_COUNTRY;
   const source = searchParams.get("source") ?? ALL;
   const seriesFilter = searchParams.get("series") ?? ALL;
   const query = searchParams.get("q") ?? "";
@@ -109,7 +111,8 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === ALL || value === "" || (key === "view" && value === "list")) params.delete(key);
+    const isDefaultCountry = key === "country" && value === DEFAULT_COUNTRY;
+    if ((value === ALL && key !== "country") || value === "" || (key === "view" && value === "list") || isDefaultCountry) params.delete(key);
     else params.set(key, value);
     if (key === "kategoria" && value !== "competition") params.delete("series");
     const suffix = params.toString();
@@ -187,7 +190,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
   }, [filteredResult]);
 
   const groups = groupByCategory(filtered);
-  const hasActiveFilters = category !== (lockedCategory ?? ALL) || city !== ALL || country !== ALL || source !== ALL || seriesFilter !== ALL || query !== "" || dateFilter !== "all";
+  const hasActiveFilters = category !== (lockedCategory ?? ALL) || city !== ALL || country !== DEFAULT_COUNTRY || source !== ALL || seriesFilter !== ALL || query !== "" || dateFilter !== "all";
 
   function resetFilters() {
     router.replace(pathname, { scroll: false });
