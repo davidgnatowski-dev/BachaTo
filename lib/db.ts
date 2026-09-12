@@ -226,6 +226,7 @@ ensureColumn("events", "registration_status", `registration_status TEXT`);
 ensureColumn("events", "registration_price", `registration_price TEXT`);
 ensureColumn("events", "qualifying_spots_leaders", `qualifying_spots_leaders INTEGER`);
 ensureColumn("events", "qualifying_spots_followers", `qualifying_spots_followers INTEGER`);
+ensureColumn("events", "country", `country TEXT`);
 ensureColumn("events", "venue", `venue TEXT`);
 ensureColumn("events", "address", `address TEXT`);
 ensureColumn("events", "latitude", `latitude REAL`);
@@ -412,12 +413,12 @@ export function getLastRunPerSchool(): Record<string, { finishedAt: string; ok: 
 
 const upsertEventStmt = db.prepare(`
   INSERT INTO events (
-    source, category, external_id, title, city, venue, address, latitude, longitude, organizer, cover_image,
+    source, category, external_id, title, city, country, venue, address, latitude, longitude, organizer, cover_image,
     description, competition_series, competition_stage, qualifies_for, competition_parent_id,
     registration_status, registration_price, qualifying_spots_leaders, qualifying_spots_followers,
     start_date, end_date, people_json, program_json, source_url, first_seen_at, last_seen_at
   ) VALUES (
-    @source, @category, @externalId, @title, @city, @venue, @address, @latitude, @longitude, @organizer, @coverImage,
+    @source, @category, @externalId, @title, @city, @country, @venue, @address, @latitude, @longitude, @organizer, @coverImage,
     @description, @competitionSeries, @competitionStage, @qualifiesFor, @competitionParentId,
     @registrationStatus, @registrationPrice, @qualifyingSpotsLeaders, @qualifyingSpotsFollowers,
     @startDate, @endDate, @peopleJson, @programJson, @sourceUrl, @now, @now
@@ -426,6 +427,7 @@ const upsertEventStmt = db.prepare(`
     category = excluded.category,
     title = excluded.title,
     city = excluded.city,
+    country = excluded.country,
     venue = excluded.venue,
     address = excluded.address,
     latitude = excluded.latitude,
@@ -471,6 +473,7 @@ export function saveScrapedEvents(source: string, items: ScrapedEvent[]): { foun
         externalId: item.externalId,
         title: item.title,
         city: item.city ?? null,
+        country: item.country ?? null,
         venue: item.venue ?? null,
         address: item.address ?? null,
         latitude: item.latitude ?? null,
@@ -506,7 +509,7 @@ export function saveScrapedEvents(source: string, items: ScrapedEvent[]): { foun
  */
 type EventDbRow = Omit<EventRow, "people" | "programItems"> & { peopleJson: string | null; programJson: string | null };
 
-const EVENT_SELECT = `e.id, e.source, e.category, e.external_id as externalId, e.title, e.city, e.venue, e.address,
+const EVENT_SELECT = `e.id, e.source, e.category, e.external_id as externalId, e.title, e.city, e.country, e.venue, e.address,
   e.latitude, e.longitude, e.organizer, e.cover_image as coverImage, e.description,
   e.competition_series as competitionSeries, e.competition_stage as competitionStage, e.qualifies_for as qualifiesFor,
   e.competition_parent_id as competitionParentId, e.registration_status as registrationStatus,

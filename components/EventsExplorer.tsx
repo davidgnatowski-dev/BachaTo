@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { EventCategory, EventRow } from "@/lib/types";
-import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_SECTION_TITLES, groupByCategory, groupCompetitionSeries, pluralizeEvents } from "@/lib/events";
+import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_SECTION_TITLES, eventCountry, groupByCategory, groupCompetitionSeries, pluralizeEvents } from "@/lib/events";
 import { EventCard } from "@/components/EventCard";
 import { EventMap } from "@/components/EventMap";
 import { ChevronDownIcon } from "@/components/icons";
@@ -99,6 +99,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
       (initialCategory && (CATEGORY_ORDER as string[]).includes(initialCategory) ? initialCategory : ALL)
   );
   const city = searchParams.get("city") ?? ALL;
+  const country = searchParams.get("country") ?? ALL;
   const source = searchParams.get("source") ?? ALL;
   const seriesFilter = searchParams.get("series") ?? ALL;
   const query = searchParams.get("q") ?? "";
@@ -128,6 +129,14 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
     [scopedRows]
   );
 
+  const countries = useMemo(
+    () =>
+      Array.from(new Set(scopedRows.map((r) => eventCountry(r)).filter((v): v is string => Boolean(v)))).sort((a, b) =>
+        a.localeCompare(b, "pl")
+      ),
+    [scopedRows]
+  );
+
   const sources = useMemo(
     () => Array.from(new Set(scopedRows.map((r) => r.source))).sort((a, b) => a.localeCompare(b, "pl")),
     [scopedRows]
@@ -149,6 +158,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
     const monday = new Date(saturday); monday.setDate(monday.getDate() + 2);
     const matchesNonCategory = (r: EventRow) => {
       if (city !== ALL && r.city !== city) return false;
+      if (country !== ALL && eventCountry(r) !== country) return false;
       if (source !== ALL && r.source !== source) return false;
       if ((category === "competition" || lockedCategory === "competition") && seriesFilter !== ALL && r.competitionSeries !== seriesFilter) return false;
       if (q && !`${r.title} ${r.city ?? ""} ${r.organizer ?? ""} ${r.source} ${r.description ?? ""} ${r.competitionSeries ?? ""} ${r.qualifiesFor ?? ""}`.toLowerCase().includes(q)) return false;
@@ -166,7 +176,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
       rows: byNonCategory.filter((r) => category === ALL || r.category === (category as EventCategory)),
       byNonCategory,
     };
-  }, [scopedRows, category, city, source, seriesFilter, query, dateFilter, lockedCategory]);
+  }, [scopedRows, category, city, country, source, seriesFilter, query, dateFilter, lockedCategory]);
 
   const filtered = filteredResult.rows;
 
@@ -177,7 +187,7 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
   }, [filteredResult]);
 
   const groups = groupByCategory(filtered);
-  const hasActiveFilters = category !== (lockedCategory ?? ALL) || city !== ALL || source !== ALL || seriesFilter !== ALL || query !== "" || dateFilter !== "all";
+  const hasActiveFilters = category !== (lockedCategory ?? ALL) || city !== ALL || country !== ALL || source !== ALL || seriesFilter !== ALL || query !== "" || dateFilter !== "all";
 
   function resetFilters() {
     router.replace(pathname, { scroll: false });
@@ -242,6 +252,20 @@ export function EventsExplorer({ rows, lockedCategory }: { rows: EventRow[]; loc
             ))}
           </select>
         </label>
+
+        {countries.length > 0 && (
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Kraj
+            <select value={country} onChange={(e) => updateParam("country", e.target.value)} className={SELECT_CLASS}>
+              <option value={ALL}>Wszystkie</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-xs text-muted">
           Źródło danych

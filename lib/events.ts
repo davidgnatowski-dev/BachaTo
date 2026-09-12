@@ -34,6 +34,18 @@ export function eventHref(row: Pick<EventRow, "source" | "id">): string {
   return `/eventy/${encodeURIComponent(row.source)}/${row.id}`;
 }
 
+/**
+ * Polish country name for filtering. Tensy and Szkoły only ever list Polish
+ * schools/organizers and never set `country`, so they default to Poland;
+ * Społeczność (hand-maintained) and Bachata Social World Cup (scraped) set
+ * it explicitly per event since both span other countries too.
+ */
+export function eventCountry(row: Pick<EventRow, "source" | "country">): string | undefined {
+  if (row.country) return row.country;
+  if (row.source === "Tensy" || row.source === "Szkoły") return "Polska";
+  return undefined;
+}
+
 export function eventProgramFavoriteId(source: string, eventId: number, sessionId: string): string {
   return `${encodeURIComponent(source)}|${eventId}|${encodeURIComponent(sessionId)}`;
 }
@@ -269,6 +281,7 @@ const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
     title: "10. edycja konkursu Jack & Jill — miejsca dla Followerów wyprzedane",
     city: "Warszawa",
     organizer: "Warsaw Bachata Meet Up",
+    coverImage: "/events/comp-wbmu-jack-jill-10.jpg",
     description:
       "Amatorski konkurs Jack & Jill (osoby uczące nie mogą startować). Sobota 26.09, 14:00–00:30. Miejsca dla Followerów są wyprzedane.",
     endDate: "2026-09-27",
@@ -289,6 +302,7 @@ const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
     venue: "Warszawski Dom Technika NOT",
     address: "ul. Tadeusza Czackiego 3/5, 00-043 Warszawa",
     organizer: "Warsaw Bachata Meet Up",
+    coverImage: "/events/comp-wbmu-finals-2026.jpg",
     description:
       "Trzy dni warsztatów, cztery nocne imprezy, pokazy oraz światowe finały Social Competition. Od piątku 27.11 o 19:00 do poniedziałku 30.11 o 01:00.",
     endDate: "2026-11-30",
@@ -315,6 +329,23 @@ const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
     competitionStage: "qualifier",
     qualifiesFor: "Finał Bachata Social World Cup 2027 w Genewie",
     sourceUrl: "https://bachatasocialworldcup.com/qualifiers/poland-qualifier-warsaw-2026",
+  },
+  "Bachata Social World Cup:germany-qualifier-berlin-2027": {
+    title: "Niemieckie eliminacje Bachata Social World Cup 2027 — Xplosion Ritmo Berlin",
+    city: "Berlin",
+    venue: "Kesselhaus i Maschinenhaus (Kulturbrauerei)",
+    organizer: "Xplosion Event · Bachata Social World Cup",
+    description:
+      "Piąta edycja konkursu bachaty social podczas Xplosion Ritmo Berlin i oficjalne niemieckie eliminacje do finału Bachata Social World Cup 2027 w Genewie. Rejestracja jest indywidualna, a partnerzy są losowani i zmieniani. Rywalizacja obejmuje dwie grupy eliminacyjne, półfinał oraz finał z sędziami jako partnerami. Jury ocenia rolę Leadera lub Followera, kontakt w parze, muzykalność, umiejętność dopasowania się do różnych partnerów, technikę i jakość ruchu. Awans otrzyma 1 Leader i 1 Follower. Wymagany jest Full Pass albo Party Pass festiwalu; pojedynczy bilet na imprezę lub bilet dzienny nie wystarcza. Opłata konkursowa wynosi 25 euro.",
+    startDate: "2027-05-15",
+    competitionSeries: "Bachata Social World Cup 2026/2027",
+    competitionStage: "qualifier",
+    qualifiesFor: "Finał Bachata Social World Cup 2027 w Genewie",
+    registrationStatus: "open",
+    registrationPrice: "25 EUR",
+    qualifyingSpotsLeaders: 1,
+    qualifyingSpotsFollowers: 1,
+    sourceUrl: "https://bachatasocialworldcup.com/qualifiers/germany-qualifier-berlin-2027",
   },
   "Bachata Social World Cup:world-cup-finals-2027": {
     title: "Finał Bachata Social World Cup 2027",

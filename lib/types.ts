@@ -74,6 +74,8 @@ export interface ScrapedEvent {
   category: EventCategory;
   title: string;
   city?: string;
+  /** Polish country name, for filtering — most sources are Poland-only and leave this unset. */
+  country?: string;
   venue?: string;
   address?: string;
   latitude?: number;

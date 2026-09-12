@@ -38,6 +38,7 @@ const PLACE_TRANSLATIONS: Record<string, string> = {
   Czechia: "Czechy",
   Denmark: "Dania",
   Egypt: "Egipt",
+  England: "Anglia",
   Finland: "Finlandia",
   France: "Francja",
   Geneva: "Genewa",
@@ -47,6 +48,7 @@ const PLACE_TRANSLATIONS: Record<string, string> = {
   India: "Indie",
   Italy: "Włochy",
   Japan: "Japonia",
+  Korea: "Korea Południowa",
   "Korea, Republic of": "Korea Południowa",
   Latvia: "Łotwa",
   Lithuania: "Litwa",
@@ -65,6 +67,7 @@ const PLACE_TRANSLATIONS: Record<string, string> = {
   Portugal: "Portugalia",
   Prague: "Praga",
   Romania: "Rumunia",
+  Scotland: "Szkocja",
   Serbia: "Serbia",
   Slovakia: "Słowacja",
   Slovenia: "Słowenia",
@@ -105,6 +108,10 @@ const COUNTRY_ISO: Record<string, string> = {
   Czechia: "cz",
   Denmark: "dk",
   Egypt: "eg",
+  // Not separate ISO countries, but the site runs their qualifiers apart
+  // from the rest of the UK — share the UK flag rather than show none.
+  England: "gb",
+  Scotland: "gb",
   Finland: "fi",
   France: "fr",
   Germany: "de",
@@ -165,6 +172,26 @@ function locationCountryName(location: string | undefined): string | undefined {
   if (!location) return undefined;
   const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
   return parts.length > 0 ? parts[parts.length - 1] : undefined;
+}
+
+/**
+ * Polish country name for the country filter, same signal priority as the
+ * flag (title, then map-pin location) but explicitly validated against
+ * COUNTRY_ISO first — unlike the flag lookup, a plain string chain here
+ * would silently accept a city name from a city-named qualifier title
+ * ("Cologne Qualifier" -> "Cologne") instead of falling through to the
+ * location line's real country.
+ */
+function resolvedCountryName(originalTitle: string, location: string | undefined): string | undefined {
+  // A direct dictionary lookup, not polishPlace(): that function does
+  // substring regex replacement meant for free-text addresses, and a value
+  // like "Korea Południowa" itself contains the word "Korea" — running the
+  // full translation table over its own output would re-match and double it.
+  const fromTitle = qualifierCountryName(originalTitle);
+  if (fromTitle && fromTitle in COUNTRY_ISO) return PLACE_TRANSLATIONS[fromTitle] ?? fromTitle;
+  const fromLocation = locationCountryName(location);
+  if (fromLocation && fromLocation in COUNTRY_ISO) return PLACE_TRANSLATIONS[fromLocation] ?? fromLocation;
+  return undefined;
 }
 
 const MONTHS: Record<string, string> = {
@@ -414,6 +441,9 @@ export function parseBachataSocialWorldCupHtml(html: string): ScrapedEvent[] {
       category: "competition",
       title: polishCompetitionTitle(originalTitle),
       city,
+      // Same "no single country fits" rule as the flag: world final and cup
+      // umbrellas (North/South American Cup etc.) span multiple countries.
+      country: isWorldFinal ? undefined : resolvedCountryName(originalTitle, location),
       organizer: host ?? "Bachata Social World Cup",
       coverImage: (image?.startsWith("http") ? image : undefined) ?? flagUrl,
       description: competitionDescription(card, cup, host, location || undefined),
