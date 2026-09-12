@@ -6,6 +6,10 @@ import type { EventCategory, EventRow } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_SECTION_TITLES, groupByCategory, groupCompetitionSeries, pluralizeEvents } from "@/lib/events";
 import { EventCard } from "@/components/EventCard";
 import { EventMap } from "@/components/EventMap";
+import { ChevronDownIcon } from "@/components/icons";
+
+/** Collapsed by default once a list gets long enough that scrolling past it is annoying. */
+const COLLAPSE_THRESHOLD = 6;
 
 const ALL = "all";
 type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "week" | "month";
@@ -47,22 +51,30 @@ function CompetitionListing({ rows }: { rows: EventRow[] }) {
           </header>
           <div className="flex flex-col gap-6 p-4 sm:p-6">
             {series.qualifiers.length > 0 && (
-              <div>
-                <div className="mb-3 flex items-center gap-3">
+              <details className="group" open={series.qualifiers.length <= COLLAPSE_THRESHOLD}>
+                <summary className="mb-3 flex cursor-pointer list-none items-center gap-3 select-none [&::-webkit-details-marker]:hidden">
                   <span className="rounded-full bg-sky-950/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-sky-300 ring-1 ring-sky-700/50">Eliminacje</span>
                   <span className="h-px flex-1 bg-sky-900/50" />
-                </div>
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-sky-300">
+                    {qualifierCountLabel(series.qualifiers.length)}
+                    <ChevronDownIcon className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  </span>
+                </summary>
                 <EventGrid rows={series.qualifiers} />
-              </div>
+              </details>
             )}
             {series.finals.length > 0 && (
-              <div>
-                <div className="mb-3 flex items-center gap-3">
+              <details className="group" open>
+                <summary className="mb-3 flex cursor-pointer list-none items-center gap-3 select-none [&::-webkit-details-marker]:hidden">
                   <span className="rounded-full bg-amber-950/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-700/50">Finał</span>
                   <span className="h-px flex-1 bg-amber-900/50" />
-                </div>
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-amber-300">
+                    {series.finals.length}
+                    <ChevronDownIcon className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  </span>
+                </summary>
                 <EventGrid rows={series.finals} />
-              </div>
+              </details>
             )}
           </div>
         </section>

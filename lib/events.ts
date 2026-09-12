@@ -320,6 +320,9 @@ const CURATED_EVENT_OVERRIDES: Record<string, Partial<EventRow>> = {
     title: "Finał Bachata Social World Cup 2027",
     city: "Genewa",
     organizer: "Bachata Social World Cup",
+    // No single flag fits a world final for 50+ countries — real photo of
+    // the Geneva crowd waving national flags instead, from the finals page.
+    coverImage: "/events/comp-bswc-finals.jpg",
     description:
       "Światowy finał sezonu 2026/2027 w Genewie dla 180 zakwalifikowanych tancerzy z ponad 50 krajów: 90 Leaderów i 90 Followerów. Pula nagród wynosi 3000 euro. Do finału można dostać się przez eliminacje europejskie i międzykontynentalne, prekwalifikacje w Genewie oraz eliminacje Elite. Awans jest przypisany do zwycięzcy i nie można przekazać go innej osobie. Jeśli zakwalifikowany tancerz ponownie zajmie miejsce premiowane awansem, miejsce przechodzi na kolejną uprawnioną osobę. Uczestnicy otrzymują zaproszenie e-mail i dostęp do panelu, a udział w finale wymaga osobnej opłaty.",
     startDate: "2027-10-08",

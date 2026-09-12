@@ -13,7 +13,7 @@ import { EventGoingButton } from "@/components/EventGoingButton";
 import { EventCard } from "@/components/EventCard";
 import { EventCoverImage } from "@/components/EventCoverImage";
 import { OrganizerBadge } from "@/components/OrganizerBadge";
-import { CalendarIcon, CheckIcon, PinIcon, TicketIcon } from "@/components/icons";
+import { CalendarIcon, CheckIcon, ChevronDownIcon, PinIcon, TicketIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -159,9 +159,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
             Podany wyżej zakres dat obejmuje cały cykl. Rejestracja odbywa się osobno na każdą eliminację — użyj przycisku „Oryginalna strona” na wybranej karcie.
           </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {competitionChildren.map((row) => <EventCard key={`${row.source}-${row.id}`} row={row} />)}
-          </div>
+          <details className="group mt-5" open={competitionChildren.length <= 6}>
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-sky-300 select-none [&::-webkit-details-marker]:hidden">
+              {competitionChildren.length} {competitionChildren.length === 1 ? "eliminacja" : "eliminacje"}
+              <ChevronDownIcon className="h-4 w-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {competitionChildren.map((row) => <EventCard key={`${row.source}-${row.id}`} row={row} />)}
+            </div>
+          </details>
         </section>
       )}
 
