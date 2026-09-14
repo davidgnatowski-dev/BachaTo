@@ -437,3 +437,12 @@ export function pluralizeEvents(n: number): string {
   if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "wydarzenia";
   return "wydarzeń";
 }
+
+/** Polish plural forms for "szkoła" (school): 1 / 2-4 / 5+. */
+export function pluralizeSchools(n: number): string {
+  if (n === 1) return "szkoła";
+  const lastDigit = n % 10;
+  const lastTwo = n % 100;
+  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "szkoły";
+  return "szkół";
+}

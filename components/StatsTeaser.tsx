@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pluralizeSchools } from "@/lib/events";
 
 /**
  * Live catalog totals (real, not an example) as the pitch, plus what an
@@ -17,7 +18,7 @@ export function StatsTeaser({
 }) {
   const tiles = [
     { value: classCount, label: "zajęć" },
-    { value: schoolCount, label: schoolCount === 1 ? "szkoła" : "szkoły" },
+    { value: schoolCount, label: pluralizeSchools(schoolCount) },
     { value: instructorCount, label: "instruktorów" },
     { value: eventCount, label: "wydarzeń" },
   ];

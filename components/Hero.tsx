@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pluralizeSchools } from "@/lib/events";
 
 export function Hero({
   classCount,
@@ -11,7 +12,7 @@ export function Hero({
 }) {
   const stats = [
     classCount ? `${classCount} zajęć w grafiku` : null,
-    schoolCount ? `${schoolCount} ${schoolCount === 1 ? "szkoła" : "szkoły"}` : null,
+    schoolCount ? `${schoolCount} ${pluralizeSchools(schoolCount)}` : null,
     eventCount ? `${eventCount} nadchodzących wydarzeń` : null,
   ].filter(Boolean) as string[];
 
