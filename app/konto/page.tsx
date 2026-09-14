@@ -17,9 +17,9 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/logowanie");
 
-  const favorites = getUserFavorites(user.id);
-  const surveyPreferences = getUserPreferences(user.id);
-  const notificationPreferences = getUserNotificationPreferences(user.id);
+  const favorites = await getUserFavorites(user.id);
+  const surveyPreferences = await getUserPreferences(user.id);
+  const notificationPreferences = await getUserNotificationPreferences(user.id);
   const editablePreferences = {
     ...user.preferences,
     levels: user.preferences.levels.length > 0 ? user.preferences.levels : surveyPreferences.levels,

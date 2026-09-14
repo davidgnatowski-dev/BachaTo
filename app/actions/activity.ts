@@ -49,7 +49,7 @@ export async function logManualActivity(
   const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
 
   const key = `manual-${crypto.randomUUID()}`;
-  addUserActivity(user.id, {
+  await addUserActivity(user.id, {
     key,
     classId: key,
     dateIso,
@@ -64,7 +64,7 @@ export async function logManualActivity(
     activityType,
   });
   if (rating !== null || note !== null) {
-    updateUserActivityReflection(user.id, key, rating, note);
+    await updateUserActivityReflection(user.id, key, rating, note);
   }
 
   revalidatePath("/podsumowanie");
@@ -76,28 +76,28 @@ export async function logManualActivity(
 export async function syncActivity(entry: Omit<UserActivityRow, "markedAt">, active: boolean) {
   const user = await getCurrentUser();
   if (!user) return;
-  if (active) addUserActivity(user.id, entry);
-  else removeUserActivity(user.id, entry.key);
+  if (active) await addUserActivity(user.id, entry);
+  else await removeUserActivity(user.id, entry.key);
 }
 
 /** Removes one attendance entry from the signed-in user's account. */
 export async function deleteActivity(key: string) {
   const user = await getCurrentUser();
   if (!user) return;
-  removeUserActivity(user.id, key);
+  await removeUserActivity(user.id, key);
 }
 
 export async function syncActivitySkip(key: string, skipped: boolean) {
   const user = await getCurrentUser();
   if (!user) return;
-  setUserActivitySkipped(user.id, key, skipped);
+  await setUserActivitySkipped(user.id, key, skipped);
 }
 
 export async function saveActivityReflection(key: string, rating: number | null, note: string | null) {
   const user = await getCurrentUser();
   if (!user) return;
   const safeRating = rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null;
-  updateUserActivityReflection(user.id, key, safeRating, note?.trim().slice(0, 500) || null);
+  await updateUserActivityReflection(user.id, key, safeRating, note?.trim().slice(0, 500) || null);
 }
 
 /** Null when logged out. Used once on mount to merge account attendance into this browser's localStorage. */

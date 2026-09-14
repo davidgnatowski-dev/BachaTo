@@ -71,18 +71,21 @@ export default async function PodsumowaniePage() {
   );
 }
 
-function AccountStats({ userId }: { userId: number }) {
-  const activityAll = getUserActivity(userId);
+async function AccountStats({ userId }: { userId: number }) {
+  const [activityAll, eventActivity, programActivity, plannedEvents, favorites] = await Promise.all([
+    getUserActivity(userId),
+    getUserEventActivity(userId),
+    getUserEventProgramActivity(userId),
+    getRecentPlannedEvents(userId),
+    getUserFavorites(userId),
+  ]);
   // Provisional (auto-marked, unconfirmed) attendances still show in the list
   // below so the user can confirm them — but they don't count in any stat.
   const activity = confirmedActivityOnly(activityAll);
-  const eventActivity = getUserEventActivity(userId);
-  const programActivity = getUserEventProgramActivity(userId);
   const workshopMinutes = programActivity.reduce((sum, entry) => sum + (entry.durationMinutes ?? 0), 0);
   const workshopHours = Math.round((workshopMinutes / 60) * 10) / 10;
   const attendedEventKeys = new Set(eventActivity.map((entry) => entry.eventKey));
-  const eventsToConfirm = getRecentPlannedEvents(userId).filter((event) => !attendedEventKeys.has(`${event.source}-${event.id}`));
-  const favorites = getUserFavorites(userId);
+  const eventsToConfirm = plannedEvents.filter((event) => !attendedEventKeys.has(`${event.source}-${event.id}`));
   const stats = computeActivityStats(activity);
   const favCounts = countFavorites(favorites);
   const levelBucket = stats.favoriteLevel ? classifyLevel(stats.favoriteLevel) : undefined;

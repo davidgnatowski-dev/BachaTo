@@ -33,11 +33,11 @@ export async function register(_prevState: AuthActionState | undefined, formData
     return { error: "Zbyt wiele prób rejestracji z tym adresem. Spróbuj ponownie później." };
   }
 
-  if (getUserByEmail(email)) {
+  if (await getUserByEmail(email)) {
     return { error: "Konto z tym adresem e-mail już istnieje." };
   }
 
-  const userId = createUser({ email, passwordHash: hashPassword(password), name });
+  const userId = await createUser({ email, passwordHash: hashPassword(password), name });
   await startSession(userId);
   redirect("/konto");
 }

@@ -22,7 +22,7 @@ export async function submitEventRequest(_previous: SubmissionState, formData: F
   if (eventTitle.length < 3) return { ok: false, message: "Podaj nazwę wydarzenia." };
   if (message.length < 10) return { ok: false, message: "Napisz krótko, co chcesz dodać lub poprawić." };
 
-  createEventSubmission({
+  await createEventSubmission({
     userId: user?.id ?? null,
     kind,
     eventKey: eventKey || null,

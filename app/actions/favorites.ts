@@ -11,8 +11,8 @@ import { getCurrentUser } from "@/lib/auth";
 export async function syncFavorite(itemType: FavoriteItemType, itemId: string, kind: FavoriteKind, active: boolean) {
   const user = await getCurrentUser();
   if (!user) return;
-  if (active) addUserFavorite(user.id, itemType, itemId, kind);
-  else removeUserFavorite(user.id, itemType, itemId, kind);
+  if (active) await addUserFavorite(user.id, itemType, itemId, kind);
+  else await removeUserFavorite(user.id, itemType, itemId, kind);
 }
 
 /** Null when logged out. Used once on mount to merge account favorites into this browser's localStorage. */

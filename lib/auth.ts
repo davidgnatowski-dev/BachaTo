@@ -80,7 +80,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 export async function startSession(userId: number) {
   const sessionId = randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  createSession(userId, sessionId, expiresAt.toISOString());
+  await createSession(userId, sessionId, expiresAt.toISOString());
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionId, {
@@ -96,7 +96,7 @@ export async function startSession(userId: number) {
 export async function endSession() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
-  if (sessionId) deleteSession(sessionId);
+  if (sessionId) await deleteSession(sessionId);
   cookieStore.delete(SESSION_COOKIE);
 }
 
@@ -105,12 +105,12 @@ export async function getCurrentUser(): Promise<PublicUser | null> {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
   if (!sessionId) return null;
-  const row = getSessionUser(sessionId);
+  const row = await getSessionUser(sessionId);
   return row ? toPublicUser(row) : null;
 }
 
 /** Re-reads the user by id — for after a profile mutation, when the session cookie itself didn't change. */
-export function toPublicUserById(id: number): PublicUser | null {
-  const row = getUserById(id);
+export async function toPublicUserById(id: number): Promise<PublicUser | null> {
+  const row = await getUserById(id);
   return row ? toPublicUser(row) : null;
 }

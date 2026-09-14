@@ -44,3 +44,6 @@ next-env.d.ts
 /data/*.sqlite
 /data/*.sqlite-shm
 /data/*.sqlite-wal
+
+# user-uploaded profile photos
+/public/uploads/avatars/

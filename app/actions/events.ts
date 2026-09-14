@@ -18,8 +18,8 @@ export async function setEventAttendance(source: string, eventId: number, attend
   const event = getEventBySourceAndId(source, eventId);
   if (!event || event.startDate > toLocalIsoDate(new Date())) return false;
 
-  if (attended) addUserEventActivity(user.id, event);
-  else removeUserEventActivity(user.id, source, eventId);
+  if (attended) await addUserEventActivity(user.id, event);
+  else await removeUserEventActivity(user.id, source, eventId);
   return true;
 }
 
@@ -29,8 +29,8 @@ export async function setEventProgramAttendance(source: string, eventId: number,
   const event = getEventBySourceAndId(source, eventId);
   const item = event?.programItems?.find((entry) => entry.id === sessionId);
   if (!event || !item || new Date(item.startAt) > new Date()) return false;
-  if (attended) addUserEventProgramActivity(user.id, event, item);
-  else removeUserEventProgramActivity(user.id, source, eventId, sessionId);
+  if (attended) await addUserEventProgramActivity(user.id, event, item);
+  else await removeUserEventProgramActivity(user.id, source, eventId, sessionId);
   return true;
 }
 
@@ -39,6 +39,6 @@ export async function setEventGoing(source: string, eventId: number, active: boo
   if (!user || !Number.isInteger(eventId) || eventId <= 0 || source.length > 100) return false;
   const event = getEventBySourceAndId(source, eventId);
   if (!event) return false;
-  setEventRsvp(user.id, source, eventId, active);
+  await setEventRsvp(user.id, source, eventId, active);
   return true;
 }

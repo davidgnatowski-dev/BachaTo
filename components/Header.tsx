@@ -14,6 +14,8 @@ const NAV_LINKS = [
   { href: "/grafik", label: "Grafik zajęć" },
   { href: "/szkoly", label: "Szkoły" },
   { href: "/instruktorzy", label: "Społeczność" },
+  { href: "/nauka", label: "Nauka" },
+  { href: "/muzyka", label: "Muzyka" },
 ] as const;
 
 interface SessionUser {

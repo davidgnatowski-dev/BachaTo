@@ -22,6 +22,8 @@ const items = [
   { key: "instructors", label: "Instruktorzy", href: "/instruktorzy", icon: PeopleIcon },
   { key: "stats", label: "Statystyki", href: "/podsumowanie", icon: TrophyIcon },
   { key: "favorites", label: "Ulubione", href: "/#ulubione", icon: HeartIcon },
+  { key: "learning", label: "Nauka", href: "/nauka", icon: PeopleIcon },
+  { key: "music", label: "Muzyka", href: "/muzyka", icon: GridIcon },
   { key: "account", label: "Profil i ustawienia", href: "/konto", icon: PersonIcon },
 ] as const;
 

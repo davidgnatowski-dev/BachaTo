@@ -9,8 +9,8 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return Response.json([], { status: 200 });
 
-  const preferences = getUserNotificationPreferences(user.id);
-  const favorites = getUserFavorites(user.id);
+  const preferences = await getUserNotificationPreferences(user.id);
+  const favorites = await getUserFavorites(user.id);
   const plannedClasses = new Set(favorites.filter((item) => item.itemType === "class" && item.kind === "planned").map((item) => item.itemId));
   const plannedEvents = new Set(favorites.filter((item) => item.itemType === "event" && item.kind === "planned").map((item) => item.itemId));
   const likedClasses = favorites.filter((item) => item.itemType === "class" && item.kind === "liked").length;

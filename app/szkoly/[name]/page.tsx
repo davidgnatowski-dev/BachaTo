@@ -63,7 +63,7 @@ export default async function SchoolProfilePage({ params }: { params: Promise<{ 
     .sort((a, b) => a.name.localeCompare(b.name, "pl"));
 
   const user = await getCurrentUser();
-  const activityStats = user ? computeActivityStats(getUserActivity(user.id).filter((e) => e.school === name && !e.autoMarked)) : undefined;
+  const activityStats = user ? computeActivityStats((await getUserActivity(user.id)).filter((e) => e.school === name && !e.autoMarked)) : undefined;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-8">

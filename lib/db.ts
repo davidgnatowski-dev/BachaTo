@@ -8,6 +8,7 @@ import { toLocalIsoDate } from "./format";
 import { applyCuratedEventOverride, eventDedupKey, eventProgramFavoriteId, EVENT_SOURCES, isCuratedEventSuppressed } from "./events";
 import { parseNotificationPreferences, type NotificationPreferences } from "./notificationPreferences";
 import { enrichInstructorProfiles } from "./instructorProfiles";
+import { getSupabaseAdmin } from "./supabaseAdmin";
 
 const dataDir = path.join(process.cwd(), "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -76,6 +77,11 @@ db.exec(`
     avatar_emoji TEXT,
     bio TEXT,
     created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS google_accounts (
+    subject TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS sessions (
@@ -719,8 +725,25 @@ export interface UserRow {
   createdAt: string;
 }
 
-export function createUser(input: { email: string; passwordHash: string; name: string }): number {
+function mapSupabaseUser(row: Record<string, unknown>): UserRow {
+  return {
+    id: Number(row.id), email: String(row.email), passwordHash: String(row.password_hash), name: String(row.name),
+    avatarEmoji: row.avatar_emoji as string | null, avatarUrl: row.avatar_url as string | null, bio: row.bio as string | null,
+    instagramUrl: row.instagram_url as string | null, facebookUrl: row.facebook_url as string | null,
+    city: row.city as string | null, district: row.district as string | null,
+    maxDistanceKm: row.max_distance_km as number | null, preferencesJson: row.preferences_json as string | null,
+    publicProfile: Number(row.public_profile ?? 0), createdAt: String(row.created_at),
+  };
+}
+
+export async function createUser(input: { email: string; passwordHash: string; name: string }): Promise<number> {
   const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("users").insert({ email: input.email.toLowerCase(), password_hash: input.passwordHash, name: input.name, created_at: now }).select("id").single();
+    if (error) throw error;
+    return Number(data.id);
+  }
   const result = db
     .prepare(`INSERT INTO users (email, password_hash, name, created_at) VALUES (@email, @passwordHash, @name, @now)`)
     .run({ email: input.email.toLowerCase(), passwordHash: input.passwordHash, name: input.name, now });
@@ -732,44 +755,102 @@ const USER_COLUMNS = `id, email, password_hash as passwordHash, name, avatar_emo
        max_distance_km as maxDistanceKm, preferences_json as preferencesJson, public_profile as publicProfile,
        created_at as createdAt`;
 
-export function getUserByEmail(email: string): UserRow | undefined {
+export async function getUserByEmail(email: string): Promise<UserRow | undefined> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("users").select("*").eq("email", email.toLowerCase()).maybeSingle();
+    if (error) throw error;
+    return data ? mapSupabaseUser(data) : undefined;
+  }
   return db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).get(email.toLowerCase()) as UserRow | undefined;
 }
 
-export function getUserById(id: number): UserRow | undefined {
+export async function getUserById(id: number): Promise<UserRow | undefined> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data ? mapSupabaseUser(data) : undefined;
+  }
   return db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).get(id) as UserRow | undefined;
 }
 
-export function updateUserProfile(
+export async function updateUserProfile(
   id: number,
   input: { name: string; avatarEmoji: string | null; avatarUrl: string | null; bio: string | null; instagramUrl: string | null; facebookUrl: string | null }
 ) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({
+      name: input.name, avatar_emoji: input.avatarEmoji, avatar_url: input.avatarUrl, bio: input.bio,
+      instagram_url: input.instagramUrl, facebook_url: input.facebookUrl,
+    }).eq("id", id);
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `UPDATE users SET name = @name, avatar_emoji = @avatarEmoji, avatar_url = @avatarUrl, bio = @bio,
        instagram_url = @instagramUrl, facebook_url = @facebookUrl WHERE id = @id`
   ).run({ id, ...input });
 }
 
-export function updateUserPreferences(
+export async function updateUserAvatar(id: number, avatarUrl: string | null) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({ avatar_url: avatarUrl }).eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  db.prepare(`UPDATE users SET avatar_url = @avatarUrl WHERE id = @id`).run({ id, avatarUrl });
+}
+
+export async function updateUserPreferences(
   id: number,
   input: { city: string | null; district: string | null; maxDistanceKm: number | null; preferencesJson: string; publicProfile: boolean }
 ) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({
+      city: input.city, district: input.district, max_distance_km: input.maxDistanceKm,
+      preferences_json: input.preferencesJson, public_profile: input.publicProfile ? 1 : 0,
+    }).eq("id", id);
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `UPDATE users SET city = @city, district = @district, max_distance_km = @maxDistanceKm,
        preferences_json = @preferencesJson, public_profile = @publicProfile WHERE id = @id`
   ).run({ id, ...input, publicProfile: input.publicProfile ? 1 : 0 });
 }
 
-export function getUserNotificationPreferences(userId: number): NotificationPreferences {
+export async function getUserNotificationPreferences(userId: number): Promise<NotificationPreferences> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("users").select("notification_preferences_json").eq("id", userId).maybeSingle();
+    if (error) throw error;
+    return parseNotificationPreferences((data?.notification_preferences_json as string | null | undefined) ?? null);
+  }
   const row = db.prepare(`SELECT notification_preferences_json as value FROM users WHERE id = ?`).get(userId) as { value: string | null } | undefined;
   return parseNotificationPreferences(row?.value);
 }
 
-export function updateUserNotificationPreferences(userId: number, preferences: NotificationPreferences) {
+export async function updateUserNotificationPreferences(userId: number, preferences: NotificationPreferences) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({ notification_preferences_json: JSON.stringify(preferences) }).eq("id", userId);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`UPDATE users SET notification_preferences_json = ? WHERE id = ?`).run(JSON.stringify(preferences), userId);
 }
 
-export function updateUserPassword(id: number, passwordHash: string) {
+export async function updateUserPassword(id: number, passwordHash: string) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({ password_hash: passwordHash }).eq("id", id);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`UPDATE users SET password_hash = @passwordHash WHERE id = @id`).run({ id, passwordHash });
 }
 
@@ -788,7 +869,24 @@ export interface UserPreferences {
 
 const EMPTY_PREFERENCES: UserPreferences = { levels: [], formats: [], days: [], timeFrom: null, surveyDoneAt: null };
 
-export function getUserPreferences(userId: number): UserPreferences {
+export async function getUserPreferences(userId: number): Promise<UserPreferences> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("pref_levels, pref_formats, pref_days, pref_time_from, onboarding_survey_done_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return EMPTY_PREFERENCES;
+    return {
+      levels: data.pref_levels ? JSON.parse(data.pref_levels) : [],
+      formats: data.pref_formats ? JSON.parse(data.pref_formats) : [],
+      days: data.pref_days ? JSON.parse(data.pref_days) : [],
+      timeFrom: data.pref_time_from,
+      surveyDoneAt: data.onboarding_survey_done_at,
+    };
+  }
   const row = db
     .prepare(
       `SELECT pref_levels as levelsJson, pref_formats as formatsJson, pref_days as daysJson, pref_time_from as timeFrom,
@@ -808,10 +906,20 @@ export function getUserPreferences(userId: number): UserPreferences {
   };
 }
 
-export function saveUserPreferences(
+export async function saveUserPreferences(
   userId: number,
   prefs: { levels: string[]; formats: string[]; days: number[]; timeFrom: string | null }
 ) {
+  const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({
+      pref_levels: JSON.stringify(prefs.levels), pref_formats: JSON.stringify(prefs.formats),
+      pref_days: JSON.stringify(prefs.days), pref_time_from: prefs.timeFrom, onboarding_survey_done_at: now,
+    }).eq("id", userId);
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `UPDATE users SET pref_levels = @levels, pref_formats = @formats, pref_days = @days, pref_time_from = @timeFrom,
        onboarding_survey_done_at = @now WHERE id = @id`
@@ -821,18 +929,28 @@ export function saveUserPreferences(
     formats: JSON.stringify(prefs.formats),
     days: JSON.stringify(prefs.days),
     timeFrom: prefs.timeFrom,
-    now: new Date().toISOString(),
+    now,
   });
 }
 
-export function skipOnboardingSurvey(userId: number) {
-  db.prepare(`UPDATE users SET onboarding_survey_done_at = @now WHERE id = @id`).run({
-    id: userId,
-    now: new Date().toISOString(),
-  });
+export async function skipOnboardingSurvey(userId: number) {
+  const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("users").update({ onboarding_survey_done_at: now }).eq("id", userId);
+    if (error) throw error;
+    return;
+  }
+  db.prepare(`UPDATE users SET onboarding_survey_done_at = @now WHERE id = @id`).run({ id: userId, now });
 }
 
-export function createSession(userId: number, sessionId: string, expiresAt: string) {
+export async function createSession(userId: number, sessionId: string, expiresAt: string) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("sessions").insert({ id: sessionId, user_id: userId, created_at: new Date().toISOString(), expires_at: expiresAt });
+    if (error) throw error;
+    return;
+  }
   db.prepare(`INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (@id, @userId, @now, @expiresAt)`).run({
     id: sessionId,
     userId,
@@ -842,8 +960,14 @@ export function createSession(userId: number, sessionId: string, expiresAt: stri
 }
 
 /** Session-cookie-value -> user, or undefined if the session doesn't exist or has expired. */
-export function getSessionUser(sessionId: string): UserRow | undefined {
+export async function getSessionUser(sessionId: string): Promise<UserRow | undefined> {
   const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data: session, error } = await supabase.from("sessions").select("user_id").eq("id", sessionId).gt("expires_at", now).maybeSingle();
+    if (error) throw error;
+    return session ? getUserById(Number(session.user_id)) : undefined;
+  }
   return db
     .prepare(
       `SELECT u.id, u.email, u.password_hash as passwordHash, u.name, u.avatar_emoji as avatarEmoji, u.avatar_url as avatarUrl, u.bio,
@@ -856,19 +980,27 @@ export function getSessionUser(sessionId: string): UserRow | undefined {
     .get(sessionId, now) as UserRow | undefined;
 }
 
-export function deleteSession(sessionId: string) {
+export async function deleteSession(sessionId: string) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`DELETE FROM sessions WHERE id = ?`).run(sessionId);
 }
 
 // --- Password reset -------------------------------------------------------
 
-export function createPasswordReset(userId: number, token: string, expiresAt: string) {
-  db.prepare(`INSERT INTO password_resets (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)`).run(
-    token,
-    userId,
-    new Date().toISOString(),
-    expiresAt
-  );
+export async function createPasswordReset(userId: number, token: string, expiresAt: string) {
+  const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("password_resets").insert({ token, user_id: userId, created_at: now, expires_at: expiresAt });
+    if (error) throw error;
+    return;
+  }
+  db.prepare(`INSERT INTO password_resets (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)`).run(token, userId, now, expiresAt);
 }
 
 export interface PasswordResetRow {
@@ -877,13 +1009,25 @@ export interface PasswordResetRow {
   used: number;
 }
 
-export function getPasswordReset(token: string): PasswordResetRow | undefined {
+export async function getPasswordReset(token: string): Promise<PasswordResetRow | undefined> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("password_resets").select("user_id, expires_at, used").eq("token", token).maybeSingle();
+    if (error) throw error;
+    return data ? { userId: Number(data.user_id), expiresAt: String(data.expires_at), used: Number(data.used) } : undefined;
+  }
   return db.prepare(`SELECT user_id as userId, expires_at as expiresAt, used FROM password_resets WHERE token = ?`).get(token) as
     | PasswordResetRow
     | undefined;
 }
 
-export function markPasswordResetUsed(token: string) {
+export async function markPasswordResetUsed(token: string) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("password_resets").update({ used: 1 }).eq("token", token);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`UPDATE password_resets SET used = 1 WHERE token = ?`).run(token);
 }
 
@@ -898,13 +1042,33 @@ export interface UserFavoriteRow {
   kind: FavoriteKind;
 }
 
-export function addUserFavorite(userId: number, itemType: FavoriteItemType, itemId: string, kind: FavoriteKind) {
+export async function addUserFavorite(userId: number, itemType: FavoriteItemType, itemId: string, kind: FavoriteKind) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase
+      .from("user_favorites")
+      .upsert(
+        { user_id: userId, item_type: itemType, item_id: itemId, kind, created_at: new Date().toISOString() },
+        { onConflict: "user_id,item_type,item_id,kind", ignoreDuplicates: true }
+      );
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `INSERT OR IGNORE INTO user_favorites (user_id, item_type, item_id, kind, created_at) VALUES (?, ?, ?, ?, ?)`
   ).run(userId, itemType, itemId, kind, new Date().toISOString());
 }
 
-export function removeUserFavorite(userId: number, itemType: FavoriteItemType, itemId: string, kind: FavoriteKind) {
+export async function removeUserFavorite(userId: number, itemType: FavoriteItemType, itemId: string, kind: FavoriteKind) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase
+      .from("user_favorites")
+      .delete()
+      .eq("user_id", userId).eq("item_type", itemType).eq("item_id", itemId).eq("kind", kind);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`DELETE FROM user_favorites WHERE user_id = ? AND item_type = ? AND item_id = ? AND kind = ?`).run(
     userId,
     itemType,
@@ -913,7 +1077,13 @@ export function removeUserFavorite(userId: number, itemType: FavoriteItemType, i
   );
 }
 
-export function getUserFavorites(userId: number): UserFavoriteRow[] {
+export async function getUserFavorites(userId: number): Promise<UserFavoriteRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_favorites").select("item_type, item_id, kind").eq("user_id", userId);
+    if (error) throw error;
+    return (data ?? []).map((row) => ({ itemType: row.item_type as FavoriteItemType, itemId: String(row.item_id), kind: row.kind as FavoriteKind }));
+  }
   return db
     .prepare(`SELECT item_type as itemType, item_id as itemId, kind FROM user_favorites WHERE user_id = ?`)
     .all(userId) as UserFavoriteRow[];
@@ -931,7 +1101,20 @@ export interface CommunityMemberRow {
   facebookUrl: string | null;
 }
 
-export function getPublicCommunityMembers(): CommunityMemberRow[] {
+export async function getPublicCommunityMembers(): Promise<CommunityMemberRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, avatar_emoji, avatar_url, bio, city, district, instagram_url, facebook_url")
+      .eq("public_profile", 1)
+      .order("name");
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: Number(row.id), name: String(row.name), avatarEmoji: row.avatar_emoji, avatarUrl: row.avatar_url, bio: row.bio,
+      city: row.city, district: row.district, instagramUrl: row.instagram_url, facebookUrl: row.facebook_url,
+    }));
+  }
   return db.prepare(
     `SELECT id, name, avatar_emoji as avatarEmoji, avatar_url as avatarUrl, bio, city, district,
             instagram_url as instagramUrl, facebook_url as facebookUrl
@@ -960,7 +1143,22 @@ export interface UserActivityRow {
   activityType?: string | null;
 }
 
-export function addUserActivity(userId: number, entry: Omit<UserActivityRow, "markedAt"> & { markedAt?: string }) {
+export async function addUserActivity(userId: number, entry: Omit<UserActivityRow, "markedAt"> & { markedAt?: string }) {
+  const markedAt = entry.markedAt ?? new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_activity").upsert(
+      {
+        user_id: userId, key: entry.key, class_id: entry.classId, date_iso: entry.dateIso, title: entry.title,
+        instructor: entry.instructor, school: entry.school, level: entry.level, format: entry.format,
+        dance_style: entry.danceStyle, duration_minutes: entry.durationMinutes, marked_at: markedAt,
+        auto_marked: entry.autoMarked ? 1 : 0, activity_type: entry.activityType ?? null,
+      },
+      { onConflict: "user_id,key" }
+    );
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `INSERT INTO user_activity (
        user_id, key, class_id, date_iso, title, instructor, school, level, format, dance_style, duration_minutes, marked_at, auto_marked, activity_type
@@ -980,37 +1178,80 @@ export function addUserActivity(userId: number, entry: Omit<UserActivityRow, "ma
     format: entry.format,
     danceStyle: entry.danceStyle,
     durationMinutes: entry.durationMinutes,
-    markedAt: entry.markedAt ?? new Date().toISOString(),
+    markedAt,
     autoMarked: entry.autoMarked ? 1 : 0,
     activityType: entry.activityType ?? null,
   });
 }
 
-export function removeUserActivity(userId: number, key: string) {
+export async function removeUserActivity(userId: number, key: string) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_activity").delete().eq("user_id", userId).eq("key", key);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`DELETE FROM user_activity WHERE user_id = ? AND key = ?`).run(userId, key);
 }
 
-export function setUserActivitySkipped(userId: number, key: string, skipped: boolean) {
+export async function setUserActivitySkipped(userId: number, key: string, skipped: boolean) {
+  const supabase = getSupabaseAdmin();
   if (skipped) {
-    db.prepare(
-      `INSERT INTO user_activity_skips (user_id, key, marked_at) VALUES (?, ?, ?)
-       ON CONFLICT(user_id, key) DO UPDATE SET marked_at = excluded.marked_at`
-    ).run(userId, key, new Date().toISOString());
-    removeUserActivity(userId, key);
+    if (supabase) {
+      const { error } = await supabase.from("user_activity_skips").upsert(
+        { user_id: userId, key, marked_at: new Date().toISOString() },
+        { onConflict: "user_id,key" }
+      );
+      if (error) throw error;
+    } else {
+      db.prepare(
+        `INSERT INTO user_activity_skips (user_id, key, marked_at) VALUES (?, ?, ?)
+         ON CONFLICT(user_id, key) DO UPDATE SET marked_at = excluded.marked_at`
+      ).run(userId, key, new Date().toISOString());
+    }
+    await removeUserActivity(userId, key);
+    return;
+  }
+  if (supabase) {
+    const { error } = await supabase.from("user_activity_skips").delete().eq("user_id", userId).eq("key", key);
+    if (error) throw error;
     return;
   }
   db.prepare(`DELETE FROM user_activity_skips WHERE user_id = ? AND key = ?`).run(userId, key);
 }
 
-export function getUserActivitySkippedKeys(userId: number): string[] {
+export async function getUserActivitySkippedKeys(userId: number): Promise<string[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_activity_skips").select("key").eq("user_id", userId);
+    if (error) throw error;
+    return (data ?? []).map((row) => String(row.key));
+  }
   return (db.prepare(`SELECT key FROM user_activity_skips WHERE user_id = ?`).all(userId) as Array<{ key: string }>).map((row) => row.key);
 }
 
-export function updateUserActivityReflection(userId: number, key: string, rating: number | null, note: string | null) {
+export async function updateUserActivityReflection(userId: number, key: string, rating: number | null, note: string | null) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_activity").update({ rating, note }).eq("user_id", userId).eq("key", key);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`UPDATE user_activity SET rating = ?, note = ? WHERE user_id = ? AND key = ?`).run(rating, note, userId, key);
 }
 
-export function getUserActivity(userId: number): UserActivityRow[] {
+export async function getUserActivity(userId: number): Promise<UserActivityRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_activity").select("*").eq("user_id", userId).order("date_iso", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      key: row.key, classId: row.class_id, dateIso: row.date_iso, title: row.title, instructor: row.instructor,
+      school: row.school, level: row.level, format: row.format, danceStyle: row.dance_style,
+      durationMinutes: row.duration_minutes, markedAt: row.marked_at, autoMarked: Boolean(row.auto_marked),
+      rating: row.rating, note: row.note, activityType: row.activity_type,
+    }));
+  }
   const rows = db
     .prepare(
       `SELECT key, class_id as classId, date_iso as dateIso, title, instructor, school, level, format,
@@ -1034,7 +1275,22 @@ export interface UserEventActivityRow {
   markedAt: string;
 }
 
-export function addUserEventActivity(userId: number, event: EventRow) {
+export async function addUserEventActivity(userId: number, event: EventRow) {
+  const eventKey = `${event.source}-${event.id}`;
+  const markedAt = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_event_activity").upsert(
+      {
+        user_id: userId, event_key: eventKey, event_id: event.id, source: event.source, date_iso: event.startDate,
+        title: event.title, category: event.category, city: event.city ?? null, organizer: event.organizer ?? null,
+        marked_at: markedAt,
+      },
+      { onConflict: "user_id,event_key" }
+    );
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `INSERT INTO user_event_activity (
        user_id, event_key, event_id, source, date_iso, title, category, city, organizer, marked_at
@@ -1050,7 +1306,7 @@ export function addUserEventActivity(userId: number, event: EventRow) {
        marked_at = excluded.marked_at`
   ).run({
     userId,
-    eventKey: `${event.source}-${event.id}`,
+    eventKey,
     eventId: event.id,
     source: event.source,
     dateIso: event.startDate,
@@ -1058,19 +1314,45 @@ export function addUserEventActivity(userId: number, event: EventRow) {
     category: event.category,
     city: event.city ?? null,
     organizer: event.organizer ?? null,
-    markedAt: new Date().toISOString(),
+    markedAt,
   });
 }
 
-export function removeUserEventActivity(userId: number, source: string, eventId: number) {
+export async function removeUserEventActivity(userId: number, source: string, eventId: number) {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_event_activity").delete().eq("user_id", userId).eq("event_key", `${source}-${eventId}`);
+    if (error) throw error;
+    return;
+  }
   db.prepare(`DELETE FROM user_event_activity WHERE user_id = ? AND event_key = ?`).run(userId, `${source}-${eventId}`);
 }
 
-export function hasUserAttendedEvent(userId: number, source: string, eventId: number): boolean {
+export async function hasUserAttendedEvent(userId: number, source: string, eventId: number): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_event_activity").select("user_id").eq("user_id", userId).eq("event_key", `${source}-${eventId}`).maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
   return Boolean(db.prepare(`SELECT 1 FROM user_event_activity WHERE user_id = ? AND event_key = ?`).get(userId, `${source}-${eventId}`));
 }
 
-export function getUserEventActivity(userId: number): UserEventActivityRow[] {
+export async function getUserEventActivity(userId: number): Promise<UserEventActivityRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("user_event_activity")
+      .select("event_key, event_id, source, date_iso, title, category, city, organizer, marked_at")
+      .eq("user_id", userId)
+      .order("date_iso", { ascending: false })
+      .order("marked_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      eventKey: row.event_key, eventId: Number(row.event_id), source: row.source, dateIso: row.date_iso, title: row.title,
+      category: row.category, city: row.city, organizer: row.organizer, markedAt: row.marked_at,
+    }));
+  }
   return db.prepare(
     `SELECT event_key as eventKey, event_id as eventId, source, date_iso as dateIso, title,
             category, city, organizer, marked_at as markedAt
@@ -1078,20 +1360,44 @@ export function getUserEventActivity(userId: number): UserEventActivityRow[] {
   ).all(userId) as UserEventActivityRow[];
 }
 
-export function getRecentPlannedEvents(userId: number, daysBack = 90): EventRow[] {
+/**
+ * "Planned" event favorites live in Supabase (user data) while the events
+ * themselves stay in the local read-only schedule SQLite — a plain SQL JOIN
+ * can't span both anymore, so this fetches the favorited keys first, then
+ * filters the events already loaded from SQLite in JS.
+ */
+export async function getRecentPlannedEvents(userId: number, daysBack = 90): Promise<EventRow[]> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysBack);
   const today = toLocalIsoDate(new Date());
+  const cutoffIso = toLocalIsoDate(cutoff);
+
+  const supabase = getSupabaseAdmin();
+  let plannedKeys: Set<string>;
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("user_favorites")
+      .select("item_id")
+      .eq("user_id", userId).eq("item_type", "event").eq("kind", "planned");
+    if (error) throw error;
+    plannedKeys = new Set((data ?? []).map((row) => String(row.item_id)));
+  } else {
+    const rows = db
+      .prepare(`SELECT item_id FROM user_favorites WHERE user_id = ? AND item_type = 'event' AND kind = 'planned'`)
+      .all(userId) as Array<{ item_id: string }>;
+    plannedKeys = new Set(rows.map((row) => row.item_id));
+  }
+  if (plannedKeys.size === 0) return [];
+
   const rows = db.prepare(
     `SELECT ${EVENT_SELECT}
      FROM events e
-     INNER JOIN user_favorites f
-       ON f.user_id = ? AND f.item_type = 'event' AND f.kind = 'planned'
-      AND f.item_id = e.source || '-' || e.id
-     WHERE e.start_date <= ? AND COALESCE(e.end_date, e.start_date) >= ?
-     ORDER BY e.start_date DESC`
-  ).all(userId, today, toLocalIsoDate(cutoff)) as EventDbRow[];
-  return rows.map(hydrateEvent);
+     WHERE e.start_date <= ? AND COALESCE(e.end_date, e.start_date) >= ?`
+  ).all(today, cutoffIso) as EventDbRow[];
+  return rows
+    .map(hydrateEvent)
+    .filter((event) => plannedKeys.has(`${event.source}-${event.id}`))
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
 }
 
 export interface UserEventProgramActivityRow {
@@ -1107,11 +1413,25 @@ export interface UserEventProgramActivityRow {
   markedAt: string;
 }
 
-export function addUserEventProgramActivity(userId: number, event: EventRow, item: EventProgramItem) {
+export async function addUserEventProgramActivity(userId: number, event: EventRow, item: EventProgramItem) {
   const start = new Date(item.startAt);
   const end = item.endAt ? new Date(item.endAt) : null;
   const durationMinutes = end && end > start ? Math.round((end.getTime() - start.getTime()) / 60000) : 60;
   const sessionKey = eventProgramFavoriteId(event.source, event.id, item.id);
+  const markedAt = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_event_program_activity").upsert(
+      {
+        user_id: userId, session_key: sessionKey, event_key: `${event.source}-${event.id}`, event_id: event.id,
+        source: event.source, date_iso: item.startAt.slice(0, 10), title: item.title, event_title: event.title,
+        instructors: item.instructors.join(", ") || null, duration_minutes: durationMinutes, marked_at: markedAt,
+      },
+      { onConflict: "user_id,session_key" }
+    );
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `INSERT INTO user_event_program_activity (
        user_id, session_key, event_key, event_id, source, date_iso, title, event_title, instructors, duration_minutes, marked_at
@@ -1128,18 +1448,37 @@ export function addUserEventProgramActivity(userId: number, event: EventRow, ite
     event.title,
     item.instructors.join(", ") || null,
     durationMinutes,
-    new Date().toISOString()
+    markedAt
   );
 }
 
-export function removeUserEventProgramActivity(userId: number, source: string, eventId: number, sessionId: string) {
-  db.prepare(`DELETE FROM user_event_program_activity WHERE user_id = ? AND session_key = ?`).run(
-    userId,
-    eventProgramFavoriteId(source, eventId, sessionId)
-  );
+export async function removeUserEventProgramActivity(userId: number, source: string, eventId: number, sessionId: string) {
+  const sessionKey = eventProgramFavoriteId(source, eventId, sessionId);
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("user_event_program_activity").delete().eq("user_id", userId).eq("session_key", sessionKey);
+    if (error) throw error;
+    return;
+  }
+  db.prepare(`DELETE FROM user_event_program_activity WHERE user_id = ? AND session_key = ?`).run(userId, sessionKey);
 }
 
-export function getUserEventProgramActivity(userId: number): UserEventProgramActivityRow[] {
+export async function getUserEventProgramActivity(userId: number): Promise<UserEventProgramActivityRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("user_event_program_activity")
+      .select("session_key, event_key, event_id, source, date_iso, title, event_title, instructors, duration_minutes, marked_at")
+      .eq("user_id", userId)
+      .order("date_iso", { ascending: false })
+      .order("marked_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      sessionKey: row.session_key, eventKey: row.event_key, eventId: Number(row.event_id), source: row.source,
+      dateIso: row.date_iso, title: row.title, eventTitle: row.event_title, instructors: row.instructors,
+      durationMinutes: row.duration_minutes, markedAt: row.marked_at,
+    }));
+  }
   return db.prepare(
     `SELECT session_key as sessionKey, event_key as eventKey, event_id as eventId, source, date_iso as dateIso,
             title, event_title as eventTitle, instructors, duration_minutes as durationMinutes, marked_at as markedAt
@@ -1147,15 +1486,32 @@ export function getUserEventProgramActivity(userId: number): UserEventProgramAct
   ).all(userId) as UserEventProgramActivityRow[];
 }
 
-export function hasUserAttendedEventProgramItem(userId: number, source: string, eventId: number, sessionId: string): boolean {
-  return Boolean(db.prepare(`SELECT 1 FROM user_event_program_activity WHERE user_id = ? AND session_key = ?`).get(
-    userId,
-    eventProgramFavoriteId(source, eventId, sessionId)
-  ));
+export async function hasUserAttendedEventProgramItem(userId: number, source: string, eventId: number, sessionId: string): Promise<boolean> {
+  const sessionKey = eventProgramFavoriteId(source, eventId, sessionId);
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_event_program_activity").select("user_id").eq("user_id", userId).eq("session_key", sessionKey).maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+  return Boolean(db.prepare(`SELECT 1 FROM user_event_program_activity WHERE user_id = ? AND session_key = ?`).get(userId, sessionKey));
 }
 
-export function setEventRsvp(userId: number, source: string, eventId: number, active: boolean) {
+export async function setEventRsvp(userId: number, source: string, eventId: number, active: boolean) {
   const eventKey = `${source}-${eventId}`;
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    if (active) {
+      const { error } = await supabase
+        .from("event_rsvps")
+        .upsert({ user_id: userId, event_key: eventKey, created_at: new Date().toISOString() }, { onConflict: "user_id,event_key", ignoreDuplicates: true });
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("event_rsvps").delete().eq("user_id", userId).eq("event_key", eventKey);
+      if (error) throw error;
+    }
+    return;
+  }
   if (active) {
     db.prepare(`INSERT OR IGNORE INTO event_rsvps (user_id, event_key, created_at) VALUES (?, ?, ?)`).run(userId, eventKey, new Date().toISOString());
   } else {
@@ -1163,8 +1519,33 @@ export function setEventRsvp(userId: number, source: string, eventId: number, ac
   }
 }
 
-export function getEventRsvp(source: string, eventId: number, userId?: number): { count: number; attending: boolean; names: string[] } {
+export async function getEventRsvp(source: string, eventId: number, userId?: number): Promise<{ count: number; attending: boolean; names: string[] }> {
   const eventKey = `${source}-${eventId}`;
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { count, error: countError } = await supabase.from("event_rsvps").select("*", { count: "exact", head: true }).eq("event_key", eventKey);
+    if (countError) throw countError;
+
+    let attending = false;
+    if (userId) {
+      const { data, error } = await supabase.from("event_rsvps").select("user_id").eq("event_key", eventKey).eq("user_id", userId).maybeSingle();
+      if (error) throw error;
+      attending = Boolean(data);
+    }
+
+    const { data: rsvps, error: rsvpError } = await supabase
+      .from("event_rsvps").select("user_id, created_at").eq("event_key", eventKey).order("created_at").limit(30);
+    if (rsvpError) throw rsvpError;
+    let names: string[] = [];
+    if (rsvps && rsvps.length > 0) {
+      const { data: publicUsers, error: usersError } = await supabase
+        .from("users").select("id, name").in("id", rsvps.map((r) => r.user_id)).eq("public_profile", 1);
+      if (usersError) throw usersError;
+      const nameById = new Map((publicUsers ?? []).map((u) => [Number(u.id), String(u.name)]));
+      names = rsvps.map((r) => nameById.get(Number(r.user_id))).filter((n): n is string => Boolean(n)).slice(0, 6);
+    }
+    return { count: count ?? 0, attending, names };
+  }
   const count = (db.prepare(`SELECT COUNT(*) as count FROM event_rsvps WHERE event_key = ?`).get(eventKey) as { count: number }).count;
   const attending = userId ? Boolean(db.prepare(`SELECT 1 FROM event_rsvps WHERE event_key = ? AND user_id = ?`).get(eventKey, userId)) : false;
   const names = (db.prepare(
@@ -1174,7 +1555,7 @@ export function getEventRsvp(source: string, eventId: number, userId?: number): 
   return { count, attending, names };
 }
 
-export function createEventSubmission(input: {
+export async function createEventSubmission(input: {
   userId: number | null;
   kind: "new" | "correction" | "claim";
   eventKey: string | null;
@@ -1183,10 +1564,20 @@ export function createEventSubmission(input: {
   eventUrl: string | null;
   message: string;
 }) {
+  const createdAt = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { error } = await supabase.from("event_submissions").insert({
+      user_id: input.userId, kind: input.kind, event_key: input.eventKey, contact_email: input.contactEmail,
+      event_title: input.eventTitle, event_url: input.eventUrl, message: input.message, created_at: createdAt,
+    });
+    if (error) throw error;
+    return;
+  }
   db.prepare(
     `INSERT INTO event_submissions (user_id, kind, event_key, contact_email, event_title, event_url, message, created_at)
      VALUES (@userId, @kind, @eventKey, @contactEmail, @eventTitle, @eventUrl, @message, @createdAt)`
-  ).run({ ...input, createdAt: new Date().toISOString() });
+  ).run({ ...input, createdAt });
 }
 
 // --- User-submitted classes ----------------------------------------------
@@ -1210,11 +1601,22 @@ export interface UserClassRow {
   createdAt: string;
 }
 
-export function createUserClass(
+export async function createUserClass(
   userId: number,
   input: Omit<UserClassRow, "id" | "userId" | "createdAt">
-): number {
+): Promise<number> {
   const now = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_classes").insert({
+      user_id: userId, title: input.title, dance_style: input.danceStyle, level: input.level, format: input.format,
+      instructor: input.instructor, school_name: input.schoolName, location: input.location, description: input.description,
+      day_of_week: input.dayOfWeek, specific_date: input.specificDate, start_time: input.startTime, end_time: input.endTime,
+      source_url: input.sourceUrl, created_at: now,
+    }).select("id").single();
+    if (error) throw error;
+    return Number(data.id);
+  }
   const result = db
     .prepare(
       `INSERT INTO user_classes (
@@ -1229,7 +1631,23 @@ export function createUserClass(
   return Number(result.lastInsertRowid);
 }
 
-export function getUserClasses(userId: number): UserClassRow[] {
+export async function getUserClasses(userId: number): Promise<UserClassRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("user_classes")
+      .select("id, user_id, title, dance_style, level, format, instructor, school_name, location, description, day_of_week, specific_date, start_time, end_time, source_url, created_at")
+      .eq("user_id", userId)
+      .order("day_of_week", { ascending: true, nullsFirst: false })
+      .order("start_time", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: Number(row.id), userId: Number(row.user_id), title: row.title, danceStyle: row.dance_style, level: row.level,
+      format: row.format, instructor: row.instructor, schoolName: row.school_name, location: row.location,
+      description: row.description, dayOfWeek: row.day_of_week, specificDate: row.specific_date,
+      startTime: row.start_time, endTime: row.end_time, sourceUrl: row.source_url, createdAt: row.created_at,
+    }));
+  }
   return db
     .prepare(
       `SELECT id, user_id as userId, title, dance_style as danceStyle, level, format, instructor,
@@ -1242,7 +1660,41 @@ export function getUserClasses(userId: number): UserClassRow[] {
 }
 
 /** Ownership-checked: only deletes if the row actually belongs to this user. */
-export function deleteUserClass(id: number, userId: number): boolean {
+export async function deleteUserClass(id: number, userId: number): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.from("user_classes").delete().eq("id", id).eq("user_id", userId).select("id");
+    if (error) throw error;
+    return (data?.length ?? 0) > 0;
+  }
   const result = db.prepare(`DELETE FROM user_classes WHERE id = ? AND user_id = ?`).run(id, userId);
   return result.changes > 0;
+}
+
+/** Google identity is stored by its stable subject, never by a mutable email. */
+export async function resolveGoogleUser(subject: string, email: string, name: string): Promise<number> {
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data: account, error } = await supabase.from("google_accounts").select("user_id").eq("subject", subject).maybeSingle();
+    if (error) throw error;
+    if (account) return Number(account.user_id);
+    if (await getUserByEmail(email)) throw new Error("account_exists");
+    const userId = await createUser({ email, name, passwordHash: "google-only" });
+    const { error: linkError } = await supabase.from("google_accounts").insert({ subject, user_id: userId });
+    if (linkError) throw linkError;
+    return userId;
+  }
+  return db.transaction(() => {
+    const account = db.prepare("SELECT user_id FROM google_accounts WHERE subject = ?").get(subject) as { user_id: number } | undefined;
+    if (account) return account.user_id;
+    // Existing accounts require explicit linking after password authentication.
+    const existing = db.prepare(`SELECT 1 FROM users WHERE email = ?`).get(email.toLowerCase());
+    if (existing) throw new Error("account_exists");
+    const result = db.prepare(`INSERT INTO users (email, password_hash, name, created_at) VALUES (?, ?, ?, ?)`).run(
+      email.toLowerCase(), "google-only", name, new Date().toISOString()
+    );
+    const userId = Number(result.lastInsertRowid);
+    db.prepare("INSERT INTO google_accounts (subject, user_id) VALUES (?, ?)").run(subject, userId);
+    return userId;
+  })();
 }

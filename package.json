@@ -12,6 +12,7 @@
     "school-images": "tsx scripts/fetchSchoolImages.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "better-sqlite3": "^13.0.3",
     "cheerio": "^1.2.0",
     "maplibre-gl": "^5.24.0",

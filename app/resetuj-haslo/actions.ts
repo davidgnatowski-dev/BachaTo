@@ -24,12 +24,12 @@ export async function requestPasswordReset(
     return { error: "Zbyt wiele próśb o reset dla tego adresu. Spróbuj ponownie później." };
   }
 
-  const user = getUserByEmail(email);
+  const user = await getUserByEmail(email);
   if (!user) return { message: GENERIC_MESSAGE };
 
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + RESET_TOKEN_MINUTES * 60 * 1000).toISOString();
-  createPasswordReset(user.id, token, expiresAt);
+  await createPasswordReset(user.id, token, expiresAt);
 
   // Until an email service is configured, expose the link only during local development.
   // Returning it in production would let anyone reset a known user's password.
@@ -50,13 +50,13 @@ export async function confirmPasswordReset(
   if (password.length < 8) return { error: "Hasło musi mieć co najmniej 8 znaków." };
   if (password !== confirmPassword) return { error: "Hasła nie są takie same." };
 
-  const reset = getPasswordReset(token);
+  const reset = await getPasswordReset(token);
   if (!reset || reset.used || new Date(reset.expiresAt).getTime() < Date.now()) {
     return { error: "Ten link do resetu hasła jest nieprawidłowy lub wygasł. Poproś o nowy." };
   }
 
-  updateUserPassword(reset.userId, hashPassword(password));
-  markPasswordResetUsed(token);
+  await updateUserPassword(reset.userId, hashPassword(password));
+  await markPasswordResetUsed(token);
   await startSession(reset.userId);
   redirect("/konto");
 }

@@ -47,6 +47,8 @@ export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string
             <Link href="/podsumowanie" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">
               Statystyki
             </Link>
+            <Link href="/nauka" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Nauka</Link>
+            <Link href="/muzyka" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Muzyka</Link>
             <div className="my-1 border-t border-line" />
             <Link href="/konto" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Profil i ustawienia</Link>
           </div>

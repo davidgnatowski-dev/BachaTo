@@ -20,6 +20,8 @@ function activeSection(pathname: string): DashboardSection {
   if (pathname.startsWith("/eventy") || pathname.startsWith("/festiwale") || pathname.startsWith("/imprezy") || pathname.startsWith("/konkursy")) return "events";
   if (pathname.startsWith("/szkoly")) return "schools";
   if (pathname.startsWith("/instruktorzy")) return "instructors";
+  if (pathname.startsWith("/nauka")) return "learning";
+  if (pathname.startsWith("/muzyka")) return "music";
   if (pathname.startsWith("/podsumowanie")) return "stats";
   if (pathname.startsWith("/konto")) return "account";
   return "start";

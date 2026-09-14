@@ -19,6 +19,8 @@ import { PlanShowcase } from "@/components/PlanShowcase";
 import { HomeEventsSection } from "@/components/HomeEventsSection";
 import { HowItWorks } from "@/components/HowItWorks";
 import { StatsTeaser } from "@/components/StatsTeaser";
+import { HomeLearningMusic } from "@/components/HomeLearningMusic";
+import { HomeConversionCta } from "@/components/HomeConversionCta";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { UserDashboard } from "@/components/dashboard/UserDashboard";
 import { SCHOOL_NAMES } from "@/lib/schools";
@@ -33,7 +35,13 @@ export default async function Home() {
   const user = await getCurrentUser();
 
   if (user) {
-    const preferences = getUserPreferences(user.id);
+    const [preferences, favorites, activity, customClasses, eventActivity] = await Promise.all([
+      getUserPreferences(user.id),
+      getUserFavorites(user.id),
+      getUserActivity(user.id),
+      getUserClasses(user.id),
+      getUserEventActivity(user.id),
+    ]);
     const dashboardPreferences = {
       ...user.preferences,
       levels: user.preferences.levels.length > 0 ? user.preferences.levels : preferences.levels,
@@ -41,7 +49,6 @@ export default async function Home() {
       days: user.preferences.days.length > 0 ? user.preferences.days : preferences.days,
       timeFrom: user.preferences.timeFrom ?? preferences.timeFrom,
     };
-    const favorites = getUserFavorites(user.id);
     const initialFavorites = {
       likedClasses: favorites.filter((item) => item.itemType === "class" && item.kind === "liked").map((item) => item.itemId),
       likedEvents: favorites.filter((item) => item.itemType === "event" && item.kind === "liked").map((item) => item.itemId),
@@ -49,7 +56,7 @@ export default async function Home() {
       plannedEvents: favorites.filter((item) => item.itemType === "event" && item.kind === "planned").map((item) => item.itemId),
       plannedEventSessions: favorites.filter((item) => item.itemType === "event_session" && item.kind === "planned").map((item) => item.itemId),
     };
-    const initialActivity = getUserActivity(user.id).map((entry) => ({
+    const initialActivity = activity.map((entry) => ({
       ...entry,
       instructor: entry.instructor ?? undefined,
       level: entry.level ?? undefined,
@@ -68,10 +75,10 @@ export default async function Home() {
         <UserDashboard
           schedule={schedule}
           events={upcomingEvents}
-          customClasses={getUserClasses(user.id)}
+          customClasses={customClasses}
           initialFavorites={initialFavorites}
           initialActivity={initialActivity}
-          attendedEvents={getUserEventActivity(user.id).length}
+          attendedEvents={eventActivity.length}
           preferences={dashboardPreferences}
         />
       </div>
@@ -85,15 +92,17 @@ export default async function Home() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <Header />
+      <Hero classCount={classCount} schoolCount={schools.length} eventCount={eventCount} />
       <SearchBar />
       <QuickFilterBar schools={schools} styles={styles} />
 
-      <Hero classCount={classCount} schoolCount={schools.length} eventCount={eventCount} />
       <HowItWorks />
       <UpcomingClassesPreview schedule={schedule} loggedIn={false} />
       <PlanShowcase schedule={schedule} />
+      <HomeLearningMusic />
       <HomeEventsSection events={upcomingEvents} loggedIn={false} />
       <StatsTeaser classCount={classCount} schoolCount={schools.length} instructorCount={instructorCount} eventCount={eventCount} />
+      <HomeConversionCta />
     </div>
   );
 }

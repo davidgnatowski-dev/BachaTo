@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Header } from "@/components/Header";
 import { register } from "./actions";
 import type { AuthActionState } from "@/lib/auth";
@@ -22,6 +23,8 @@ export default function RegisterPage() {
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Załóż konto</h1>
         <p className="mt-1 text-sm text-muted">Konto pozwala edytować profil i dodawać własne zajęcia do BachaTo.</p>
       </div>
+
+      <GoogleSignInButton />
 
       <form action={formAction} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm text-zinc-300">

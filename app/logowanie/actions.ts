@@ -20,7 +20,7 @@ export async function login(_prevState: AuthActionState | undefined, formData: F
     return { error: `Zbyt wiele prób logowania. Spróbuj ponownie za ${minutes} min.` };
   }
 
-  const user = getUserByEmail(email);
+  const user = await getUserByEmail(email);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return { error: "Nieprawidłowy e-mail lub hasło." };
   }

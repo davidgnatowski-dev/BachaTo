@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Header } from "@/components/Header";
 import { login } from "./actions";
 import type { AuthActionState } from "@/lib/auth";
@@ -22,6 +23,8 @@ export default function LoginPage() {
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Zaloguj się</h1>
         <p className="mt-1 text-sm text-muted">Zaloguj się, żeby edytować profil i dodawać własne zajęcia.</p>
       </div>
+
+      <GoogleSignInButton />
 
       <form action={formAction} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm text-zinc-300">

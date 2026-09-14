@@ -13,8 +13,8 @@ export async function submitOnboardingSurvey(input: {
 }) {
   const user = await getCurrentUser();
   if (!user) return;
-  saveUserPreferences(user.id, input);
-  updateUserPreferences(user.id, {
+  await saveUserPreferences(user.id, input);
+  await updateUserPreferences(user.id, {
     city: user.city,
     district: user.district,
     maxDistanceKm: user.maxDistanceKm,
@@ -36,6 +36,6 @@ export async function submitOnboardingSurvey(input: {
 export async function skipOnboardingSurveyAction() {
   const user = await getCurrentUser();
   if (!user) return;
-  skipOnboardingSurvey(user.id);
+  await skipOnboardingSurvey(user.id);
   revalidatePath("/");
 }

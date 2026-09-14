@@ -37,11 +37,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
   if (!event) notFound();
 
   const user = await getCurrentUser();
-  const attended = user ? hasUserAttendedEvent(user.id, event.source, event.id) : false;
-  const programActivity = user ? getUserEventProgramActivity(user.id) : [];
+  const attended = user ? await hasUserAttendedEvent(user.id, event.source, event.id) : false;
+  const programActivity = user ? await getUserEventProgramActivity(user.id) : [];
   const attendedProgramKeys = new Set(programActivity.map((entry) => entry.sessionKey));
   const attendedSessionIds = (event.programItems ?? []).filter((item) => attendedProgramKeys.has(eventProgramFavoriteId(event.source, event.id, item.id))).map((item) => item.id);
-  const rsvp = getEventRsvp(event.source, event.id, user?.id);
+  const rsvp = await getEventRsvp(event.source, event.id, user?.id);
   const related = getRelatedEvents(event);
   const competitionChildren = getCompetitionChildren(event);
   const canConfirm = event.startDate <= toLocalIsoDate(new Date());

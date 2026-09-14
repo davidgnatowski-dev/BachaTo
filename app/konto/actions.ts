@@ -24,7 +24,7 @@ export async function updateNotifications(_prevState: AuthActionState | undefine
   if (!user) redirect("/logowanie");
   const allowedMinutes = [60, 180, 1440];
   const rawMinutes = Number(field(formData, "reminderMinutes"));
-  updateUserNotificationPreferences(user.id, {
+  await updateUserNotificationPreferences(user.id, {
     plannedClasses: formData.get("plannedClasses") === "on",
     plannedEvents: formData.get("plannedEvents") === "on",
     followed: formData.get("followed") === "on",
@@ -44,6 +44,7 @@ function urlField(formData: FormData, name: string): string | null {
 function imageUrlField(formData: FormData, name: string): string | null {
   const raw = field(formData, name);
   if (!raw) return null;
+  if (/^\/uploads\/avatars\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(raw) && raw.length <= 255) return raw;
   try {
     const url = new URL(raw);
     return url.protocol === "https:" && raw.length <= 2048 ? raw : null;
@@ -70,7 +71,7 @@ export async function updateProfile(_prevState: AuthActionState | undefined, for
   const instagramUrl = urlField(formData, "instagramUrl");
   const facebookUrl = urlField(formData, "facebookUrl");
 
-  updateUserProfile(user.id, { name, avatarEmoji, avatarUrl, bio, instagramUrl, facebookUrl });
+  await updateUserProfile(user.id, { name, avatarEmoji, avatarUrl, bio, instagramUrl, facebookUrl });
   revalidatePath("/konto");
   return { success: true };
 }
@@ -89,9 +90,9 @@ export async function updatePreferences(_prevState: AuthActionState | undefined,
   const timeFromRaw = field(formData, "timeFrom");
   const timeFrom = /^\d{2}:\d{2}$/.test(timeFromRaw) ? timeFromRaw : null;
 
-  saveUserPreferences(user.id, { levels, formats, days, timeFrom });
+  await saveUserPreferences(user.id, { levels, formats, days, timeFrom });
 
-  updateUserPreferences(user.id, {
+  await updateUserPreferences(user.id, {
     city: field(formData, "city") || null,
     district: field(formData, "district") || null,
     maxDistanceKm: Number.isFinite(maxDistanceRaw) && maxDistanceRaw > 0 ? Math.min(100, maxDistanceRaw) : null,
@@ -119,14 +120,14 @@ export async function changePassword(_prevState: AuthActionState | undefined, fo
   const newPassword = field(formData, "newPassword");
   const confirmPassword = field(formData, "confirmPassword");
 
-  const row = getUserByEmail(user.email);
+  const row = await getUserByEmail(user.email);
   if (!row || !verifyPassword(currentPassword, row.passwordHash)) {
     return { error: "Obecne hasło jest nieprawidłowe." };
   }
   if (newPassword.length < 8) return { error: "Nowe hasło musi mieć co najmniej 8 znaków." };
   if (newPassword !== confirmPassword) return { error: "Nowe hasła nie są takie same." };
 
-  updateUserPassword(user.id, hashPassword(newPassword));
+  await updateUserPassword(user.id, hashPassword(newPassword));
   return { success: true };
 }
 
@@ -149,7 +150,7 @@ export async function addUserClass(_prevState: AuthActionState | undefined, form
   const rawFormat = field(formData, "format");
   const format = (FORMATS as string[]).includes(rawFormat) ? (rawFormat as ClassFormat) : "unknown";
 
-  createUserClass(user.id, {
+  await createUserClass(user.id, {
     title,
     danceStyle: field(formData, "danceStyle") || null,
     level: field(formData, "level") || null,
@@ -172,6 +173,6 @@ export async function addUserClass(_prevState: AuthActionState | undefined, form
 export async function deleteUserClassAction(classId: number) {
   const user = await getCurrentUser();
   if (!user) redirect("/logowanie");
-  deleteUserClass(classId, user.id);
+  await deleteUserClass(classId, user.id);
   revalidatePath("/konto");
 }
