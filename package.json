@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "scrape": "tsx scripts/scrape.ts",
-    "school-images": "tsx scripts/fetchSchoolImages.ts"
+    "school-images": "tsx scripts/fetchSchoolImages.ts",
+    "vercel-build": "(npm run scrape || true) && next build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
