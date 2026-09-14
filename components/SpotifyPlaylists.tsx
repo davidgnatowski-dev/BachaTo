@@ -21,7 +21,7 @@ export function SpotifyPlaylists() {
         ))}
       </div>
       <p className="mt-4 text-xs leading-relaxed text-muted">
-        Aby zapisać playlistę w swojej bibliotece, otwórz ją w Spotify. Jeśli odtwarzacz jest niedostępny, skorzystaj z przycisku powyżej. Zakres odsłuchu zależy od Spotify i Twojego konta.
+        Aby zapisać playlistę w swojej bibliotece, otwórz ją w Spotify.
       </p>
     </section>
   );

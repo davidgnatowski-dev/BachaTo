@@ -19,7 +19,7 @@ export function SpotifyPlaylistCard({ playlist }: { playlist: SpotifyPlaylist })
         title={`Spotify — ${playlist.title}`}
         src={`https://open.spotify.com/embed/playlist/${playlist.id}?utm_source=generator&theme=0`}
         width="100%"
-        height="352"
+        height="660"
         loading="lazy"
         referrerPolicy="origin-when-cross-origin"
         className="rounded-xl border-0"
@@ -27,12 +27,15 @@ export function SpotifyPlaylistCard({ playlist }: { playlist: SpotifyPlaylist })
         allowFullScreen
       />
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <p className="self-center text-xs text-muted">Odtwarzaj przyciskiem ▶ w odtwarzaczu powyżej.</p>
-        <a href={`https://open.spotify.com/playlist/${playlist.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Otwórz w Spotify: ${playlist.title} (nowa karta)`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-4 py-3 text-center text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet">
-          Otwórz w Spotify <span aria-hidden="true" className="ml-2">↗</span>
-        </a>
-      </div>
+      <p className="text-xs leading-relaxed text-muted">
+        Bez zalogowania w Spotify w tej przeglądarce odtwarzacz gra tylko 30-sekundowe fragmenty utworów. Zaloguj się na{" "}
+        <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" className="text-violet hover:underline">open.spotify.com</a>
+        {" "}w tej samej przeglądarce, żeby ten sam odtwarzacz grał pełne utwory bez przerywania.
+      </p>
+
+      <a href={`https://open.spotify.com/playlist/${playlist.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Otwórz w Spotify: ${playlist.title} (nowa karta)`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-4 py-3 text-center text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet">
+        Pełna playlista bez przerw — otwórz w Spotify <span aria-hidden="true" className="ml-2">↗</span>
+      </a>
     </article>
   );
 }

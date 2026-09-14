@@ -233,7 +233,6 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
         {/* School */}
         <div className="mt-4 rounded-lg border border-line bg-black/20 p-3">
           <p className={`font-heading text-sm font-semibold ${schoolTextClass(row.school)}`}>{row.school}</p>
-          <p className="mt-1 text-xs text-zinc-300">{schoolInfo.description}</p>
           <div className="mt-2 flex flex-wrap gap-3 text-xs">
             <a href={schoolInfo.homepage} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-peach">
               Strona szkoły ↗

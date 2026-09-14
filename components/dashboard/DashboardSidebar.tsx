@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   CalendarIcon,
   GridIcon,
@@ -29,7 +32,28 @@ const items = [
 
 export type DashboardSection = (typeof items)[number]["key"];
 
+/**
+ * Next.js's router doesn't reliably re-scroll on a hash-only Link click when
+ * you're already on the target page (e.g. tapping "Plan" while already on
+ * "/") — the URL updates but the viewport doesn't move. Scroll manually in
+ * that case; otherwise let Link do a normal navigation (which does scroll to
+ * the hash on load).
+ */
+function useHashNavClick(pathname: string) {
+  return (href: string) => (event: React.MouseEvent) => {
+    const [path, hash] = href.split("#");
+    if (!hash || path !== pathname) return;
+    const target = document.getElementById(hash);
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.replaceState(null, "", href);
+  };
+}
+
 export function DashboardSidebar({ streak, active = "start" }: { streak?: number; active?: DashboardSection }) {
+  const pathname = usePathname();
+  const onHashNavClick = useHashNavClick(pathname);
   return (
     <aside className="sticky top-0 hidden h-[calc(100vh-65px)] w-56 shrink-0 flex-col border-r border-line/80 bg-[#0d1019] px-3 py-5 lg:flex">
       <nav className="flex flex-col gap-1" aria-label="Nawigacja dashboardu">
@@ -39,6 +63,7 @@ export function DashboardSidebar({ streak, active = "start" }: { streak?: number
             <Link
               key={item.label}
               href={item.href}
+              onClick={onHashNavClick(item.href)}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 item.key === active ? "bg-accent/12 text-accent" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
               }`}
@@ -67,6 +92,8 @@ export function DashboardSidebar({ streak, active = "start" }: { streak?: number
 }
 
 export function DashboardBottomNav({ active = "start" }: { active?: DashboardSection }) {
+  const pathname = usePathname();
+  const onHashNavClick = useHashNavClick(pathname);
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-line bg-zinc-950/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden" aria-label="Nawigacja mobilna">
       {[
@@ -78,7 +105,7 @@ export function DashboardBottomNav({ active = "start" }: { active?: DashboardSec
       ].map((item) => {
         const Icon = item.icon;
         return (
-          <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 py-1 text-[10px] font-medium ${item.key === active ? "text-accent" : "text-zinc-500"}`}>
+          <Link key={item.label} href={item.href} onClick={onHashNavClick(item.href)} className={`flex flex-col items-center gap-1 py-1 text-[10px] font-medium ${item.key === active ? "text-accent" : "text-zinc-500"}`}>
             <Icon className="h-4 w-4" />
             {item.label}
           </Link>
