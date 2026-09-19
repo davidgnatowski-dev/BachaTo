@@ -60,6 +60,7 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
   const rowsByKey = useMemo(() => new Map(mapRows.map((row) => [eventKey(row), row])), [mapRows]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowsRef = useRef(mapRows);
   const visibleKeysRef = useRef(mapRows.map(eventKey));
   const [ready, setReady] = useState(false);
@@ -80,6 +81,24 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
   }, [mapRows]);
 
   useEffect(() => {
+    // React 19 dev/StrictMode runs this effect mount -> cleanup -> mount
+    // synchronously once. MapLibre doesn't survive being torn down and
+    // immediately recreated on the same container (the second instance's
+    // style silently never finishes loading), so defer the actual removal
+    // by a tick and cancel it here if we're really just the StrictMode
+    // remount reusing the still-live map from the phantom mount.
+    if (removeTimerRef.current !== null) {
+      clearTimeout(removeTimerRef.current);
+      removeTimerRef.current = null;
+      return () => {
+        removeTimerRef.current = setTimeout(() => {
+          mapRef.current?.remove();
+          mapRef.current = null;
+          removeTimerRef.current = null;
+        }, 0);
+      };
+    }
+
     if (!mapContainerRef.current || mapRef.current || !hasMapRows) return;
 
     const map = new maplibregl.Map({
@@ -104,6 +123,7 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
       },
     });
 
+    map.on("error", (e) => console.error("Map error:", e.error?.message ?? e));
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: false, showUserLocation: true }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
@@ -146,8 +166,11 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
 
     mapRef.current = map;
     return () => {
-      map.remove();
-      mapRef.current = null;
+      removeTimerRef.current = setTimeout(() => {
+        map.remove();
+        mapRef.current = null;
+        removeTimerRef.current = null;
+      }, 0);
     };
     // The map stays mounted while filters change. Row changes are synchronized below.
   }, [hasMapRows]);
@@ -176,7 +199,7 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
     <div className="overflow-hidden rounded-3xl border border-line bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,.35)]">
       <div className="grid min-h-[660px] lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="relative min-h-[520px] lg:min-h-[660px]">
-          <div ref={mapContainerRef} className="absolute inset-0" aria-label="Interaktywna mapa wydarzeń" />
+          <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" aria-label="Interaktywna mapa wydarzeń" />
           {!ready && <div className="absolute inset-0 flex items-center justify-center bg-zinc-950 text-sm text-muted">Ładuję mapę…</div>}
           <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/15 bg-zinc-950/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur">{mapRows.length} wydarzeń na mapie</span>

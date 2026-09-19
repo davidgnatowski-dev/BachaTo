@@ -95,6 +95,19 @@ export const SCHOOL_INFO: Record<School, SchoolInfo> = {
 export const SCHOOL_NAMES = Object.keys(SCHOOL_INFO) as School[];
 
 /**
+ * One pin per school — the primary address from `schoolAddress()` in
+ * lib/schedule.ts, geocoded via OpenStreetMap Nominatim (2026-09-18) so the
+ * schedule map has real coordinates instead of guessed ones.
+ */
+export const SCHOOL_COORDS: Record<School, { lat: number; lon: number }> = {
+  "Abra Studio": { lat: 52.2315862, lon: 20.998756 },
+  "Salsa Libre": { lat: 52.233555, lon: 20.990899 },
+  "Warsaw Salsa Club": { lat: 52.2196041, lon: 21.0016317 },
+  "Oye!": { lat: 52.2495435, lon: 21.0291639 },
+  "Viva Cuba": { lat: 52.2141725, lon: 21.021528 },
+};
+
+/**
  * Cenniki tych szkół to rozbudowane tabele (karty sportowe, pakiety
  * wielkości, zniżki studenckie...) — zbyt złożone, żeby bezpiecznie
  * odzwierciedlić automatycznym scraperem bez ryzyka pokazania błędnej

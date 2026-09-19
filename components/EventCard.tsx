@@ -24,7 +24,7 @@ export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth
           : undefined;
 
   return (
-    <article className="relative overflow-hidden rounded-xl border border-line bg-zinc-900 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:border-zinc-600">
+    <article className="relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-line bg-zinc-900 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:border-zinc-600">
       <div className="relative aspect-[5/4] w-full bg-zinc-800 sm:aspect-[7/5]">
         <Link href={href} className="block h-full w-full" aria-label={`Zobacz wydarzenie: ${row.title}`}>
           {row.coverImage ? (
@@ -47,8 +47,8 @@ export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth
         </div>
       </div>
 
-      <div className="p-4">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex min-h-5 flex-wrap content-start gap-1.5">
           <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${colors.bg} ${colors.text} ${colors.ring}`}>
             {CATEGORY_LABELS[row.category]}
           </span>
@@ -63,7 +63,7 @@ export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth
             </span>
           )}
         </div>
-        <h2 className="mt-2 font-heading text-base font-semibold leading-snug text-foreground">
+        <h2 className="mt-2 min-h-11 font-heading text-base font-semibold leading-snug text-foreground line-clamp-2">
           <Link href={href} className="hover:text-accent">{row.title}</Link>
         </h2>
         <p className="mt-1 text-xs text-muted">{formatEventDateRange(row)}</p>
@@ -76,7 +76,7 @@ export function EventCard({ row, onRequireAuth }: { row: EventRow; onRequireAuth
         )}
         {row.organizer && <p className="mt-0.5 text-xs text-muted/70">{row.organizer}</p>}
         {row.qualifiesFor && <p className="mt-2 text-xs leading-5 text-sky-300">Awans do: {row.qualifiesFor}</p>}
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+        <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 pt-3">
           <Link href={href} className="inline-flex text-xs font-semibold text-accent hover:text-accent-peach">
             Szczegóły →
           </Link>

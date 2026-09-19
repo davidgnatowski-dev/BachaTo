@@ -105,3 +105,31 @@ export const LEVEL_BUCKET_ICONS: Record<LevelBucket, string> = {
 export function levelStyle(bucket: LevelBucket) {
   return LEVEL_STYLES[bucket];
 }
+
+/** Short letter tier code for compact UI (mobile list, timeline axis). Both P-track buckets read as "P" — the digit from levelShortCode (P1 vs P2) is what actually tells them apart in practice. */
+export const LEVEL_BUCKET_LETTERS: Record<LevelBucket, string> = {
+  starter: "P",
+  elementary: "P",
+  intermediate: "S",
+  advanced: "Z",
+  master: "M",
+  open: "O",
+  unknown: "?",
+};
+
+/**
+ * Compact level code for tight UI: the school's own P#/S# digit when the raw
+ * level string has one (e.g. "Podstawowy Plus (P2)" -> "P2"), so classes on
+ * the same P/S track stay distinguishable; otherwise the plain bucket letter.
+ */
+export function levelShortCode(raw: string | undefined | null, bucket: LevelBucket): string {
+  if (bucket === "open") return "Open";
+  if (raw) {
+    const s = raw.toLowerCase();
+    const pMatch = s.match(/\bp-?(\d)\b/);
+    if (pMatch) return `P${pMatch[1]}`;
+    const sMatch = s.match(/\bs-?(\d)\b/);
+    if (sMatch) return `S${sMatch[1]}`;
+  }
+  return LEVEL_BUCKET_LETTERS[bucket];
+}

@@ -3,36 +3,45 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ClassRow } from "@/lib/types";
-import { schoolAddress, schoolTextClass, formatDatePl, formatDuration, splitInstructors, nextOccurrences } from "@/lib/schedule";
-import { classifyLevel, levelStyle, LEVEL_BUCKET_ICONS } from "@/lib/level";
-import { FORMAT_LABELS, formatRelative, formatStyle } from "@/lib/format";
+import { schoolAddress, schoolTextClass, formatDuration, splitInstructors, nextOccurrences } from "@/lib/schedule";
+import { classifyLevel, LEVEL_BUCKET_ICONS } from "@/lib/level";
+import { FORMAT_LABELS, formatRelative } from "@/lib/format";
 import { SCHOOL_INFO } from "@/lib/schools";
 import { recentClassOccurrence } from "@/lib/calendar";
 import { useFavorites } from "@/lib/favorites";
 import { useActivity } from "@/lib/activity";
-import { ExternalLinkIcon, CheckIcon } from "@/components/icons";
+import { ExternalLinkIcon, CheckIcon, ChevronDownIcon, HeartIcon, SchoolIcon } from "@/components/icons";
 import { PlusButton } from "@/components/PlusButton";
-import { HeartButton } from "@/components/HeartButton";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { InstructorAvatar } from "@/components/InstructorAvatar";
 
-const PILL_CLASS =
-  "flex shrink-0 items-center gap-1 rounded-full border border-line bg-black/40 px-2.5 py-1 text-xs font-semibold text-zinc-200 transition-colors hover:border-violet/50 hover:text-violet";
+const MONTH_ABBR = ["STY", "LUT", "MAR", "KWI", "MAJ", "CZE", "LIP", "SIE", "WRZ", "PAŹ", "LIS", "GRU"];
+const DAY_ABBR = ["PON", "WT", "ŚR", "CZW", "PT", "SOB", "ND"];
 
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+/** A collapsed-by-default section — "Opis zajęć", "Więcej terminów z X" — so the modal opens short and expands on demand. */
+function Accordion({ title, preview, children }: { title: string; preview?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className="mt-0.5 text-sm text-zinc-200">{children}</p>
+    <div className="border-t border-line">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 py-3 text-left"
+      >
+        <span className="text-sm font-semibold text-zinc-100">{title}</span>
+        <span className="flex items-center gap-2 text-xs text-muted">
+          {!open && preview}
+          <ChevronDownIcon className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        </span>
+      </button>
+      {open && <div className="pb-3">{children}</div>}
     </div>
   );
 }
 
 export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; allRows: ClassRow[]; onClose: () => void }) {
-  const [descExpanded, setDescExpanded] = useState(false);
   const levelBucket = classifyLevel(row.level);
-  const levelColors = levelStyle(levelBucket);
-  const formatColors = formatStyle(row.format);
   const address = schoolAddress(row.school, row.location);
   const duration = formatDuration(row.startTime, row.endTime);
   const instructors = splitInstructors(row.instructor);
@@ -41,6 +50,7 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
   const { likedClassIds, plannedClassIds, toggleLikeClass, togglePlanClass } = useFavorites();
   const { isAttended, setAttended } = useActivity();
   const favoriteId = `${row.school}-${row.id}`;
+  const liked = likedClassIds.has(favoriteId);
 
   const now = new Date();
   const sourceIsStale = now.getTime() - new Date(row.lastSeenAt).getTime() > 7 * 86400000;
@@ -48,6 +58,8 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
   const canMarkAttendance = !!occurrence && occurrence.getTime() <= now.getTime();
   const attended = occurrence ? isAttended(row, occurrence) : false;
   const planned = plannedClassIds.has(favoriteId);
+
+  const chipDate = row.specificDate ? new Date(`${row.specificDate}T12:00:00`) : nextOccurrences([row], now, 1)[0]?.when;
 
   function togglePlan() {
     const adding = !planned;
@@ -68,12 +80,6 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
         )
       : [];
 
-  const otherInSchool = nextOccurrences(
-    allRows.filter((r) => !(r.school === row.school && r.id === row.id) && r.school === row.school),
-    now,
-    3
-  );
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -84,238 +90,219 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-line bg-zinc-900 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+        className="flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-line bg-zinc-900 shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:max-h-[90dvh] sm:rounded-xl"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-semibold leading-snug text-zinc-50">{row.title}</h2>
-            <p className={`mt-0.5 text-sm font-medium ${schoolTextClass(row.school)}`}>
-              {row.school}
-              {row.specificDate ? ` · ${formatDatePl(row.specificDate)}` : ""}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {row.level && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${levelColors.bg} ${levelColors.text} ${levelColors.ring}`}
-                >
-                  <span aria-hidden="true">{LEVEL_BUCKET_ICONS[levelBucket]}</span>
-                  {row.level}
-                </span>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-3 sm:p-5">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" aria-hidden="true" />
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              {chipDate && (
+                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-accent/60 bg-accent/10">
+                  <span className="font-heading text-xl font-bold leading-none text-accent">{chipDate.getDate()}</span>
+                  <span className="mt-1 text-[9px] font-semibold uppercase text-accent/80">
+                    {MONTH_ABBR[chipDate.getMonth()]} · {DAY_ABBR[((chipDate.getDay() + 6) % 7)]}
+                  </span>
+                </div>
               )}
-              {row.format !== "unknown" && (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${formatColors.bg} ${formatColors.text} ${formatColors.ring}`}
-                >
-                  {FORMAT_LABELS[row.format]}
-                </span>
-              )}
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted">{row.school}</p>
+                <h2 className="mt-0.5 font-heading text-xl font-bold leading-tight text-zinc-50">{row.title}</h2>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {row.level && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-md border border-line bg-black/25 px-2 py-0.5 text-xs font-semibold text-zinc-300"
+                    >
+                      <span aria-hidden="true">{LEVEL_BUCKET_ICONS[levelBucket]}</span>
+                      {row.level}
+                    </span>
+                  )}
+                  {row.format !== "unknown" && (
+                    <span
+                      className="rounded-md border border-line bg-black/25 px-2 py-0.5 text-xs font-semibold text-zinc-300"
+                    >
+                      {FORMAT_LABELS[row.format]}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Zamknij"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-sm text-muted hover:text-zinc-100"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Time, duration and address */}
+          <div className="mt-4 rounded-xl border border-line bg-black/25 p-3">
+            <div className="min-w-0">
+              <p className="text-base font-bold tabular-nums text-zinc-50">
+                {row.startTime ?? "?"}
+                {row.endTime ? `–${row.endTime}` : ""}
+              </p>
+              <p className="mt-0.5 text-xs text-muted">
+                {[row.location || address, "Warszawa"].filter(Boolean).join(" · ")}
+              </p>
+              {duration && <p className="mt-1 text-xs text-zinc-300">Czas trwania: {duration}</p>}
             </div>
           </div>
+
+          {/* Compact secondary actions */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <AddToCalendarButton row={row} />
+            <button
+              type="button"
+              onClick={() => toggleLikeClass(favoriteId)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                liked ? "border-accent/60 bg-accent/10 text-accent" : "border-line bg-black/30 text-zinc-200 hover:border-accent/50 hover:text-accent"
+              }`}
+            >
+              <HeartIcon className="h-4 w-4" filled={liked} />
+              Ulubione
+            </button>
+            <a
+              href={row.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-black/30 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-violet/50 hover:text-violet"
+            >
+              <ExternalLinkIcon className="h-4 w-4" />
+              Zapisy
+            </a>
+          </div>
+
+          {/* Attendance */}
           <button
-            onClick={onClose}
-            aria-label="Zamknij"
-            className="shrink-0 rounded-full border border-line px-2.5 py-1 text-sm text-muted hover:text-zinc-100"
+            type="button"
+            disabled={!canMarkAttendance}
+            onClick={() => occurrence && setAttended(row, occurrence, !attended)}
+            title={canMarkAttendance ? undefined : "Będzie dostępne po rozpoczęciu zajęć"}
+            className={`mt-3 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
+              !canMarkAttendance
+                ? "cursor-not-allowed border-line text-zinc-600"
+                : attended
+                  ? "border-green-800/60 bg-green-950/40 text-green-300"
+                  : "border-line text-zinc-300 hover:border-zinc-500"
+            }`}
           >
-            ✕
+            <CheckIcon className="h-3 w-3" />
+            {attended ? "Byłeś/aś na tych zajęciach" : "Byłem/am na tych zajęciach"}
           </button>
-        </div>
 
-        {/* Info grid */}
-        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border border-line bg-black/20 p-3.5 sm:grid-cols-3">
-          <InfoRow label="Godzina">
-            {row.startTime ?? "?"}
-            {row.endTime ? ` – ${row.endTime}` : ""}
-          </InfoRow>
-          {duration && <InfoRow label="Czas trwania">{duration}</InfoRow>}
-          {row.location && <InfoRow label="Sala">{row.location}</InfoRow>}
-          {address && <InfoRow label="Adres">{address}</InfoRow>}
-          {row.level && <InfoRow label="Poziom">{row.level}</InfoRow>}
-          <InfoRow label="Format">{FORMAT_LABELS[row.format]}</InfoRow>
-        </div>
-
-        {/* Main actions */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <PlusButton
-            label={row.specificDate ? "Dodaj ten termin do planu" : "Dodaj cotygodniowo do planu"}
-            active={planned}
-            onToggle={togglePlan}
-          />
-          <HeartButton label="Dodaj do ulubionych" active={likedClassIds.has(favoriteId)} onToggle={() => toggleLikeClass(favoriteId)} />
-          <AddToCalendarButton row={row} />
-          <a href={row.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-dark">
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
-            Zapisz się w szkole
-          </a>
-          <a href={schoolInfo.homepage} target="_blank" rel="noopener noreferrer" className={PILL_CLASS}>
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
-            Strona szkoły
-          </a>
-        </div>
-
-        {/* Attendance */}
-        <button
-          type="button"
-          disabled={!canMarkAttendance}
-          onClick={() => occurrence && setAttended(row, occurrence, !attended)}
-          title={canMarkAttendance ? undefined : "Będzie dostępne po rozpoczęciu zajęć"}
-          className={`mt-2 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${
-            !canMarkAttendance
-              ? "cursor-not-allowed border-line text-zinc-600"
-              : attended
-                ? "border-green-800/60 bg-green-950/40 text-green-300"
-                : "border-line text-zinc-300 hover:border-zinc-500"
-          }`}
-        >
-          <CheckIcon className="h-3 w-3" />
-          {attended ? "Byłeś/aś na tych zajęciach" : "Byłem/am na tych zajęciach"}
-        </button>
-
-        {/* Instructors */}
-        {instructors.length > 0 && (
-          <div className="mt-5 border-t border-line pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              {instructors.length > 1 ? "Instruktorzy" : "Instruktor"}
-            </p>
-            <div className="mt-2 flex flex-col gap-3">
+          {/* Instructors */}
+          {instructors.length > 0 && (
+            <div className="mt-3">
               {instructors.map((name) => {
                 const photo = row.instructorPhotos?.[name];
-                const classesByName = allRows.filter((r) => splitInstructors(r.instructor).includes(name));
-                const styles = Array.from(new Set(classesByName.map((r) => r.danceStyle).filter(Boolean)));
-                const bio =
-                  classesByName.find((r) => r.instructorBios?.[name])?.instructorBios?.[name] ??
-                  classesByName.find((r) => r.instructorBio && splitInstructors(r.instructor).length === 1)?.instructorBio ??
-                  (splitInstructors(row.instructor).length === 1 ? row.instructorBio : undefined);
-                const profileUrl = classesByName.find((r) => r.instructorProfileUrls?.[name])?.instructorProfileUrls?.[name];
-                const fallbackBio = styles.length > 0 ? `Prowadzi zajęcia: ${styles.join(", ")}.` : undefined;
                 return (
-                  <div key={name} className="flex gap-3 rounded-lg border border-line bg-black/20 p-3">
-                    <InstructorAvatar name={name} photoUrl={photo} sizeClassName="h-12 w-12" />
+                  <Link
+                    key={name}
+                    href={`/instruktorzy/${encodeURIComponent(name)}`}
+                    className="flex items-center gap-3 rounded-lg py-1.5 transition-colors hover:bg-black/20"
+                  >
+                    <InstructorAvatar name={name} photoUrl={photo} sizeClassName="h-10 w-10" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-heading text-sm font-semibold text-zinc-50">{name}</p>
-                      <p className={`text-xs ${schoolTextClass(row.school)}`}>{row.school}</p>
-                      {(bio || fallbackBio) && <p className="mt-1 line-clamp-3 whitespace-pre-line text-xs text-zinc-300">{bio || fallbackBio}</p>}
-                      {styles.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {styles.map((s) => (
-                            <span key={s} className="rounded-full bg-zinc-800/60 px-1.5 py-0.5 text-[10px] text-zinc-400">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <Link
-                        href={`/instruktorzy/${encodeURIComponent(name)}`}
-                        className="mt-1.5 inline-block text-xs font-semibold text-accent hover:text-accent-peach"
-                      >
-                        Zobacz profil instruktora →
-                      </Link>
-                      {profileUrl && (
-                        <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="ml-3 mt-1.5 inline-block text-xs font-semibold text-zinc-400 hover:text-zinc-200">
-                          Profil szkoły ↗
-                        </a>
-                      )}
+                      <p className="truncate text-sm font-semibold text-zinc-50">{name}</p>
+                      <p className="truncate text-xs text-muted">
+                        {instructors.length > 1 ? "Instruktor/ka" : "Instruktor/ka"} · {row.school}
+                      </p>
                     </div>
-                  </div>
+                    <ChevronDownIcon className="h-4 w-4 shrink-0 -rotate-90 text-zinc-500" />
+                  </Link>
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* School */}
-        <div className="mt-4 rounded-lg border border-line bg-black/20 p-3">
-          <p className={`font-heading text-sm font-semibold ${schoolTextClass(row.school)}`}>{row.school}</p>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs">
-            <a href={schoolInfo.homepage} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-peach">
+          {/* School */}
+          <Link
+            href={`/szkoly/${encodeURIComponent(row.school)}`}
+            className="mt-1 flex items-center gap-3 rounded-lg py-1.5 transition-colors hover:bg-black/20"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-black/40 text-zinc-400">
+              <SchoolIcon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-zinc-100">{row.school}</p>
+              <p className="truncate text-xs text-muted">Profil szkoły i pełny grafik</p>
+            </div>
+            <ChevronDownIcon className="h-4 w-4 shrink-0 -rotate-90 text-zinc-500" />
+          </Link>
+
+          {/* Description */}
+          {row.description && (
+            <Accordion title="Opis zajęć" preview="krótki podgląd">
+              <p className="whitespace-pre-line text-sm text-zinc-300">{row.description}</p>
+            </Accordion>
+          )}
+
+          {/* Related classes from the same instructor */}
+          {moreFromInstructor.length > 0 && (
+            <Accordion title={`Więcej terminów z ${instructors[0]}`}>
+              <div className="flex flex-col divide-y divide-line">
+                {moreFromInstructor.map(({ row: r, label }) => (
+                  <div key={`${r.school}-${r.id}`} className="flex flex-wrap items-center gap-3 py-2 first:pt-0 last:pb-0 sm:flex-nowrap">
+                    <div className="w-14 shrink-0">
+                      <p className="text-xs font-semibold tabular-nums text-accent">{r.startTime}</p>
+                      <p className="text-[10px] text-muted">{label}</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-zinc-200">{r.title}</p>
+                      <p className={`truncate text-[11px] ${schoolTextClass(r.school)}`}>{r.school}</p>
+                    </div>
+                    <div className="ml-[68px] shrink-0 sm:ml-0">
+                      <AddToCalendarButton row={r} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Accordion>
+          )}
+
+          <div className="mt-4 flex flex-col gap-1 border-t border-line pt-3">
+            <a href={schoolInfo.homepage} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-accent hover:text-accent-peach">
               Strona szkoły ↗
             </a>
-            <Link href={`/szkoly/${encodeURIComponent(row.school)}`} className="text-accent hover:text-accent-peach">
-              Zobacz profil szkoły →
-            </Link>
-            <Link href={`/grafik?school=${encodeURIComponent(row.school)}`} className="text-accent hover:text-accent-peach">
-              Pełny grafik szkoły →
-            </Link>
+            <a href={row.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-muted hover:text-zinc-300">
+              Sprawdź aktualny grafik i dostępność miejsc ↗
+            </a>
+            <p className={`text-[11px] ${sourceIsStale ? "text-amber-400" : "text-zinc-600"}`}>
+              Dane z grafiku szkoły: {formatRelative(row.lastSeenAt)}
+              {sourceIsStale ? " · sprawdź termin u źródła" : ""}
+            </p>
           </div>
         </div>
 
-        {/* Description */}
-        {row.description && (
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Opis zajęć</p>
-            <p className={`mt-1 whitespace-pre-line text-sm text-zinc-300 ${descExpanded ? "" : "line-clamp-4"}`}>{row.description}</p>
-            <button
-              type="button"
-              onClick={() => setDescExpanded((v) => !v)}
-              className="mt-1 text-xs font-semibold text-accent hover:text-accent-peach"
-            >
-              {descExpanded ? "Pokaż mniej" : "Pokaż więcej"}
-            </button>
-          </div>
-        )}
-
-        <a
-          href={row.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-block text-xs text-muted hover:text-zinc-300"
-        >
-          Sprawdź aktualny grafik i dostępność miejsc ↗
-        </a>
-        <p className={`mt-1 text-[11px] ${sourceIsStale ? "text-amber-400" : "text-zinc-600"}`}>
-          Dane z grafiku szkoły: {formatRelative(row.lastSeenAt)}{sourceIsStale ? " · sprawdź termin u źródła" : ""}
-        </p>
-
-        {/* Related classes */}
-        {moreFromInstructor.length > 0 && (
-          <div className="mt-5 border-t border-line pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Więcej od {instructors[0]}</p>
-            <div className="mt-2 flex flex-col divide-y divide-line">
-              {moreFromInstructor.map(({ row: r, label }) => (
-                <div key={`${r.school}-${r.id}`} className="flex flex-wrap items-center gap-3 py-2 first:pt-0 last:pb-0 sm:flex-nowrap">
-                  <div className="w-14 shrink-0">
-                    <p className="text-xs font-semibold tabular-nums text-accent">{r.startTime}</p>
-                    <p className="text-[10px] text-muted">{label}</p>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-zinc-200">{r.title}</p>
-                    <p className={`truncate text-[11px] ${schoolTextClass(r.school)}`}>{r.school}</p>
-                  </div>
-                  <div className="ml-[68px] shrink-0 sm:ml-0"><AddToCalendarButton row={r} /></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {otherInSchool.length > 0 && (
-          <div className="mt-4 border-t border-line pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Inne zajęcia w <span className={schoolTextClass(row.school)}>{row.school}</span></p>
-            <div className="mt-2 flex flex-col divide-y divide-line">
-              {otherInSchool.map(({ row: r, label }) => (
-                <div key={`${r.school}-${r.id}`} className="flex flex-wrap items-center gap-3 py-2 first:pt-0 last:pb-0 sm:flex-nowrap">
-                  <div className="w-14 shrink-0">
-                    <p className="text-xs font-semibold tabular-nums text-accent">{r.startTime}</p>
-                    <p className="text-[10px] text-muted">{label}</p>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-zinc-200">{r.title}</p>
-                    <p className="truncate text-[11px] text-muted">{r.instructor}</p>
-                  </div>
-                  <div className="ml-[68px] shrink-0 sm:ml-0"><AddToCalendarButton row={r} /></div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] text-muted">Pozostałe zajęcia widoczne w pełnym grafiku szkoły.</p>
-          </div>
-        )}
+        {/* Sticky footer */}
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-zinc-900/95 p-3 backdrop-blur">
+          <PlusButton
+            label="Dodaj do planu"
+            active={planned}
+            onToggle={togglePlan}
+            tone="accent"
+            className="flex-1 !justify-center !py-2.5 !text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => toggleLikeClass(favoriteId)}
+            aria-label={liked ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+              liked ? "border-accent/60 bg-accent/10 text-accent" : "border-line text-zinc-300 hover:text-white"
+            }`}
+          >
+            <HeartIcon className="h-4 w-4" filled={liked} />
+          </button>
+        </div>
       </div>
     </div>
   );

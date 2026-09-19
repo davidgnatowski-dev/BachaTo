@@ -8,21 +8,19 @@ import type { ActivityEntry } from "@/lib/activity";
 import type { FavoritesSnapshot } from "@/lib/favorites";
 import { attendanceKey, useActivity } from "@/lib/activity";
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
-import { computeBadges, DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
-import { BadgesGrid } from "@/components/BadgesGrid";
-import { LevelDot, LevelBadge } from "@/components/LevelDot";
+import { DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
 import { eventHref, eventProgramFavoriteId } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
-import { displayDayOfWeek, nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
+import { displayDayOfWeek, formatDuration, nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
+import { classifyLevel, levelStyle, levelShortCode } from "@/lib/level";
 import { useFavorites } from "@/lib/favorites";
-import { HeartButton } from "@/components/HeartButton";
-import { PlusButton } from "@/components/PlusButton";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
-import { UpcomingEventsPreview } from "@/components/UpcomingEventsPreview";
-import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
+import { UnifiedClassRow } from "@/components/UnifiedClassRow";
+import { UnifiedClassDayGroup } from "@/components/UnifiedClassDayGroup";
 import {
   CalendarIcon,
   CheckIcon,
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
@@ -379,13 +377,6 @@ export function UserDashboard({
   const schoolsDanced = new Set(confirmedEntries.map((entry) => entry.school));
   const instructorsDanced = new Set(confirmedEntries.flatMap((entry) => splitInstructors(entry.instructor)));
   const streak = currentStreak(confirmedEntries);
-  const badges = computeBadges({
-    activityDates: confirmedEntries.map((entry) => entry.dateIso),
-    totalHours: stats.totalHours,
-    schoolCount: schoolsDanced.size,
-    eventCount: attendedEvents,
-    streak,
-  });
   const goalDone = stats.thisWeekCount;
 
   return (
@@ -393,6 +384,26 @@ export function UserDashboard({
       <DashboardSidebar streak={streak} />
       <main className="min-w-0 flex-1 pb-24 lg:pb-10">
         <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10 px-4 py-6 sm:px-6 xl:px-8">
+          {/* Needs-your-action-now, always first: a pending confirmation is time-decaying and
+              shouldn't compete for attention with passive stats widgets further down. */}
+          {attendanceThanks && (
+            <div className="flex items-start gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-200" role="status">
+              <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              Dzięki! Twoje statystyki są zaktualizowane.
+            </div>
+          )}
+          {pendingConfirmations.length > 0 && (
+            <PendingConfirmationsCard
+              items={pendingConfirmations}
+              now={now}
+              onConfirm={(row, occurrence) => {
+                activity.setAttended(row, occurrence, true);
+                setAttendanceThanks(true);
+              }}
+              onSkip={(key) => activity.markEntrySkipped(key)}
+            />
+          )}
+
           <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
             <MyPlanSection
               groups={groupedPlanItems}
@@ -400,8 +411,6 @@ export function UserDashboard({
               filter={planFilter}
               setFilter={setPlanFilter}
               now={now}
-              likedClassIds={favorites.likedClassIds}
-              onLikeClass={favorites.toggleLikeClass}
               onRemoveClass={favorites.togglePlanClass}
               onRemoveEvent={favorites.togglePlanEvent}
               onRemoveSession={favorites.togglePlanEventSession}
@@ -412,24 +421,9 @@ export function UserDashboard({
               onOpenClass={setSelectedClass}
             />
 
+            {/* Passive progress/tracking widgets — a compact stats strip, kept separate from the
+                browse-for-later sections (favorites, recommendations) further down the page. */}
             <aside className="flex min-w-0 flex-col gap-4">
-              {attendanceThanks && (
-                <div className="flex items-start gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-200" role="status">
-                  <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
-                  Dzięki! Twoje statystyki są zaktualizowane.
-                </div>
-              )}
-              {pendingConfirmations.length > 0 && (
-                <PendingConfirmationsCard
-                  items={pendingConfirmations}
-                  now={now}
-                  onConfirm={(row, occurrence) => {
-                    activity.setAttended(row, occurrence, true);
-                    setAttendanceThanks(true);
-                  }}
-                  onSkip={(key) => activity.markEntrySkipped(key)}
-                />
-              )}
               <WeeklySummaryCard
                 eyebrow={selectedPeriod.eyebrow}
                 title={selectedPeriod.title}
@@ -451,16 +445,20 @@ export function UserDashboard({
                 <p className="mt-2 text-[11px] text-muted">
                   {goalDone >= DEFAULT_WEEKLY_GOAL ? "Cel osiągnięty 🎉" : `Jeszcze ${DEFAULT_WEEKLY_GOAL - goalDone} do celu tygodnia.`}
                 </p>
-                <div className="mt-4 border-t border-line pt-4">
-                  <BadgesGrid badges={badges} compact />
-                  <Link href="/podsumowanie" className="mt-3 inline-flex text-xs font-semibold text-accent hover:text-accent-peach">
-                    Wszystkie odznaki →
-                  </Link>
-                </div>
               </section>
               <MiniCalendar items={allPlanItems} onOpenClass={setSelectedClass} />
             </aside>
           </div>
+
+          <RecommendedClassesSection
+            recommendations={recommendations}
+            activeFilter={recommendationFilter}
+            onFilter={setRecommendationFilter}
+            plannedClassIds={favorites.plannedClassIds}
+            onPlan={favorites.togglePlanClass}
+            preferencesComplete={hasUserPreferences(preferences)}
+            onOpenClass={setSelectedClass}
+          />
 
           <FavoriteClassesSection
             favorites={favoriteClasses}
@@ -470,21 +468,6 @@ export function UserDashboard({
             now={now}
             onOpenClass={setSelectedClass}
           />
-
-          <RecommendedClassesSection
-            recommendations={recommendations}
-            activeFilter={recommendationFilter}
-            onFilter={setRecommendationFilter}
-            plannedClassIds={favorites.plannedClassIds}
-            likedClassIds={favorites.likedClassIds}
-            onPlan={favorites.togglePlanClass}
-            onLike={favorites.toggleLikeClass}
-            now={now}
-            preferencesComplete={hasUserPreferences(preferences)}
-            onOpenClass={setSelectedClass}
-          />
-
-          <UpcomingEventsPreview events={events} />
 
           <DashboardStatsSection
             totalClasses={stats.totalClasses}
@@ -509,8 +492,6 @@ function MyPlanSection({
   filter,
   setFilter,
   now,
-  likedClassIds,
-  onLikeClass,
   onRemoveClass,
   onRemoveEvent,
   onRemoveSession,
@@ -525,8 +506,6 @@ function MyPlanSection({
   filter: PlanFilter;
   setFilter: (filter: PlanFilter) => void;
   now: Date;
-  likedClassIds: Set<string>;
-  onLikeClass: (id: string) => void;
   onRemoveClass: (id: string) => void;
   onRemoveEvent: (id: string) => void;
   onRemoveSession: (id: string) => void;
@@ -536,22 +515,25 @@ function MyPlanSection({
   shareItems: PlanItem[];
   onOpenClass: (row: ClassRow) => void;
 }) {
+  const periodStart = filter === "today" ? startOfDay(now) : filter === "week" ? startOfWeek(now) : addDays(startOfWeek(now), 7);
+  const periodDates = Array.from({ length: filter === "today" ? 1 : 7 }, (_, index) => addDays(periodStart, index));
+  const plannedDates = new Set(groups.map(([date]) => date));
+  const firstPlannedDate = groups[0]?.[0];
+
   return (
     <section id="moj-plan" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-zinc-900/45 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-      <div className="flex flex-col gap-4 border-b border-line p-4 sm:p-5">
+      <div className="flex flex-col gap-4 border-b border-line bg-[linear-gradient(145deg,rgba(24,24,27,.8),rgba(9,12,20,.9))] p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Twój najbliższy plan</p>
             <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight text-zinc-50">Mój plan</h1>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2 text-right">
-            <div className="flex items-center gap-3"><SharePlanButton items={shareItems} label={summaryLabel} /><Link href="/konto" className="text-xs font-semibold text-zinc-400 hover:text-accent sm:text-sm">Ustawienia →</Link></div>
-            <span className="rounded-full border border-violet/35 bg-violet/10 px-2.5 py-1 text-[10px] font-semibold text-violet sm:text-xs">
-              {summaryLabel}: {summaryClasses} {pluralizeClasses(summaryClasses)} · {formatHours(summaryHours)} h
-            </span>
-          </div>
+          <div className="flex shrink-0 items-center gap-3"><SharePlanButton items={shareItems} label={summaryLabel} /><Link href="/konto" className="hidden text-xs font-semibold text-zinc-400 hover:text-accent sm:inline">Ustawienia →</Link></div>
         </div>
-        <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-950/70 p-1 [scrollbar-width:none]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          <span className="font-semibold text-zinc-100">{summaryClasses} {pluralizeClasses(summaryClasses)}</span><span aria-hidden="true">•</span><span>{formatHours(summaryHours)} h</span><span aria-hidden="true">•</span><span>{groups.length} {groups.length === 1 ? "dzień tańca" : "dni tańca"}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-950/70 p-1">
           {[
             { key: "today", label: "Dziś" },
             { key: "week", label: "Ten tydzień" },
@@ -561,7 +543,7 @@ function MyPlanSection({
               key={item.key}
               type="button"
               onClick={() => setFilter(item.key as PlanFilter)}
-              className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:px-4 ${
+              className={`rounded-lg px-2 py-2 text-xs font-semibold transition-colors sm:px-4 ${
                 filter === item.key ? "bg-accent text-white shadow-sm" : "text-zinc-400 hover:text-zinc-100"
               }`}
             >
@@ -570,6 +552,22 @@ function MyPlanSection({
           ))}
         </div>
       </div>
+
+      {filter !== "today" && (
+        <div className="grid grid-cols-7 gap-1 border-b border-line bg-zinc-950/35 px-2 py-2 sm:px-4">
+          {periodDates.map((date) => {
+            const iso = toLocalIsoDate(date);
+            const active = iso === firstPlannedDate;
+            return (
+              <button key={iso} type="button" onClick={() => document.getElementById(`plan-day-${iso}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} className={`relative rounded-lg px-1 py-2 text-center transition ${active ? "bg-zinc-800 text-zinc-50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
+                <span className="block text-[9px] font-semibold uppercase">{date.toLocaleDateString("pl-PL", { weekday: "short" }).replace(".", "")}</span>
+                <span className="mt-0.5 block text-xs font-semibold tabular-nums">{date.getDate()}</span>
+                {plannedDates.has(iso) && <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {groups.length === 0 ? (
         <div className="flex flex-col items-center px-5 py-12 text-center">
@@ -585,35 +583,15 @@ function MyPlanSection({
           <div className="mt-5 flex flex-wrap justify-center gap-2"><Link href="/grafik" className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark">Znajdź zajęcia</Link><Link href="/eventy" className="rounded-full border border-violet/50 px-5 py-2.5 text-sm font-semibold text-violet hover:bg-violet/10">Znajdź wydarzenia</Link></div>
         </div>
       ) : (
-        <div>
-          {groups.map(([date, items]) => {
-            const day = new Date(`${date}T12:00:00`);
-            return (
-              <div key={date} className="grid border-b border-line last:border-b-0 sm:grid-cols-[132px_minmax(0,1fr)]">
-                <div className="border-b border-line/70 bg-zinc-950/35 px-4 py-3 sm:border-b-0 sm:border-r sm:px-5 sm:py-4">
-                  <p className={`whitespace-nowrap text-sm font-semibold ${sameDay(day, now) ? "text-accent" : "text-zinc-200"}`}>{formatDayLabel(day, now)}</p>
-                  <p className="mt-0.5 text-xs tabular-nums text-muted">{formatShortDate(day)}</p>
-                </div>
-                <div className="divide-y divide-line">
-                  {items.map((item) => (
-                    <PlanClassRow
-                      key={item.key}
-                      item={item}
-                      liked={Boolean(item.favoriteId && likedClassIds.has(item.favoriteId))}
-                      onLike={() => item.favoriteId && onLikeClass(item.favoriteId)}
-                      onRemove={() => {
-                        if (!item.favoriteId) return;
-                        if (item.kind === "event") onRemoveEvent(item.favoriteId);
-                        else if (item.kind === "session") onRemoveSession(item.favoriteId);
-                        else onRemoveClass(item.favoriteId);
-                      }}
-                      onOpenClass={onOpenClass}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid gap-2 p-3 lg:grid-cols-2 lg:items-start lg:p-4">
+          {groups.map(([date, items], index) => (
+            <PlanDayGroup key={date} date={date} items={items} now={now} defaultOpen={index === 0} onRemoveClass={onRemoveClass} onRemoveEvent={onRemoveEvent} onRemoveSession={onRemoveSession} onOpenClass={onOpenClass} />
+          ))}
+          {filter !== "today" && groups.length < 7 && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-accent/35 px-3 py-3 text-xs text-zinc-400 lg:col-span-2">
+              <span>Masz wolne dni w tym tygodniu.</span><Link href="/grafik" className="shrink-0 font-semibold text-accent hover:text-accent-peach">Znajdź zajęcia →</Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -625,6 +603,22 @@ function MyPlanSection({
         <Link href="/eventy" className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-violet/50 px-4 py-3 text-sm font-semibold text-violet hover:border-violet hover:bg-violet/5"><PlusIcon className="h-4 w-4" />Dodaj wydarzenie do planu</Link>
       </div>
     </section>
+  );
+}
+
+function PlanDayGroup({ date, items, now, defaultOpen, onRemoveClass, onRemoveEvent, onRemoveSession, onOpenClass }: { date: string; items: PlanItem[]; now: Date; defaultOpen: boolean; onRemoveClass: (id: string) => void; onRemoveEvent: (id: string) => void; onRemoveSession: (id: string) => void; onOpenClass: (row: ClassRow) => void }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const day = new Date(`${date}T12:00:00`);
+  const minutes = items.reduce((sum, item) => sum + durationMinutes(item.when.toTimeString().slice(0, 5), item.endTime), 0);
+  return (
+    <article id={`plan-day-${date}`} className="scroll-mt-24 overflow-hidden rounded-2xl border border-line bg-zinc-950/30">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="grid w-full grid-cols-[3rem_minmax(0,1fr)_2rem] items-center gap-3 p-3 text-left">
+        <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-zinc-800 text-accent"><b className="font-heading text-base font-semibold leading-none">{day.getDate()}</b><span className="mt-1 text-[9px] font-semibold uppercase">{day.toLocaleDateString("pl-PL", { month: "short" }).replace(".", "")}</span></span>
+        <span className="min-w-0"><strong className={`block truncate text-sm font-semibold capitalize ${sameDay(day, now) ? "text-accent" : "text-zinc-100"}`}>{formatDayLabel(day, now)}</strong><span className="mt-1 block text-[11px] text-muted">{items.length} {pluralizeClasses(items.length)} · {formatHours(minutes / 60)} h</span></span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-zinc-400"><ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} /></span>
+      </button>
+      {open && <div className="divide-y divide-line border-t border-line px-3">{items.map((item) => <PlanClassRow key={item.key} item={item} onRemove={() => { if (!item.favoriteId) return; if (item.kind === "event") onRemoveEvent(item.favoriteId); else if (item.kind === "session") onRemoveSession(item.favoriteId); else onRemoveClass(item.favoriteId); }} onOpenClass={onOpenClass} />)}</div>}
+    </article>
   );
 }
 
@@ -643,49 +637,52 @@ function SharePlanButton({ items, label }: { items: PlanItem[]; label: string })
   return <button type="button" onClick={share} className="text-xs font-semibold text-zinc-400 hover:text-accent">{copied ? "Skopiowano ✓" : "Udostępnij"}</button>;
 }
 
-function PlanClassRow({ item, liked, onLike, onRemove, onOpenClass }: { item: PlanItem; liked: boolean; onLike: () => void; onRemove: () => void; onOpenClass: (row: ClassRow) => void }) {
+function PlanClassRow({ item, onRemove, onOpenClass }: { item: PlanItem; onRemove: () => void; onOpenClass: (row: ClassRow) => void }) {
+  const [expanded, setExpanded] = useState(false);
   const names = splitInstructors(item.instructor ?? undefined);
+  const bucket = classifyLevel(item.level);
+  const startTime = item.when.toTimeString().slice(0, 5);
+  const duration = formatDuration(startTime, item.endTime ?? undefined);
+
   return (
-    <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-      <div className="w-12 shrink-0 self-start pt-0.5">
-        <p className="font-heading text-base font-semibold tabular-nums text-zinc-50">{item.when.toTimeString().slice(0, 5)}</p>
-        {item.endTime && <p className="mt-0.5 text-[11px] tabular-nums text-muted">do {item.endTime}</p>}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <LevelDot level={item.level} className="align-middle" />
-          {item.href ? <Link href={item.href} className="truncate text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base">{item.title}</Link> : item.row ? <button type="button" onClick={() => onOpenClass(item.row!)} className="truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent sm:text-base" aria-label={`Otwórz szczegóły zajęć ${item.title}`}>{item.title}</button> : <p className="truncate text-sm font-semibold text-zinc-100 sm:text-base">{item.title}</p>}
-          <LevelBadge level={item.level} />
+    <div className="py-2.5">
+      <div className="grid grid-cols-[2.9rem_minmax(0,1fr)_2.25rem] items-center gap-2.5">
+        <div className="shrink-0">
+          <p className="font-heading text-sm font-semibold tabular-nums text-zinc-50">{startTime}</p>
+          {item.endTime && <p className="mt-0.5 text-[9px] tabular-nums text-muted">{item.endTime}</p>}
         </div>
-        <p className="mt-1 truncate text-xs text-muted">
-          {item.school && <span className={schoolTextClass(item.school)}>{item.school}</span>}
-          {item.school && item.instructor ? " · " : ""}
-          {item.row
-            ? names.map((name, index) => (
-                <span key={name}>
-                  {index > 0 && ", "}
-                  <Link href={`/instruktorzy/${encodeURIComponent(name)}`} className="hover:text-zinc-200 hover:underline">
-                    {name}
-                  </Link>
-                </span>
-              ))
-            : item.instructor}
-        </p>
+        {item.href ? (
+          <Link href={item.href} className="min-w-0 text-left">
+            <p className="font-heading text-sm font-semibold leading-snug text-zinc-50 hover:text-accent">{item.title}</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted">
+              {item.school}
+              {item.level ? <span className={`font-semibold ${levelStyle(bucket).text}`}> · {levelShortCode(item.level, bucket)}</span> : null}
+            </p>
+          </Link>
+        ) : (
+          <button type="button" onClick={() => setExpanded((value) => !value)} className="min-w-0 text-left" aria-label={`Rozwiń szczegóły zajęć ${item.title}`}>
+            <p className="font-heading text-sm font-semibold leading-snug text-zinc-50">{item.title}</p>
+            <p className="mt-0.5 truncate text-[11px] text-muted">
+              {item.school}
+              {item.level ? <span className={`font-semibold ${levelStyle(bucket).text}`}> · {levelShortCode(item.level, bucket)}</span> : null}
+            </p>
+          </button>
+        )}
+        <button type="button" onClick={() => setExpanded((value) => !value)} aria-label="Pokaż szczegóły zajęć" aria-expanded={expanded} className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-black/30 text-zinc-400 transition hover:border-zinc-500 hover:text-zinc-100"><ChevronDownIcon className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>
       </div>
-      {item.row && names.length > 0 && (
-        <InstructorAvatarGroup names={names} photos={item.row.instructorPhotos} sizeClassName="h-10 w-10" className="hidden shrink-0 sm:inline-flex" />
+      {expanded && (
+        <div className="ml-[3.55rem] mt-2 flex flex-col gap-1.5 border-l-2 border-accent/70 bg-zinc-950/40 px-3 py-2 text-xs text-muted">
+          <p><span className="text-zinc-500">Godziny:</span> {startTime}{item.endTime ? `–${item.endTime}` : ""}</p>
+          {names.length > 0 && <p><span className="text-zinc-500">Instruktorzy:</span> {names.join(", ")}</p>}
+          {item.level && <p><span className="text-zinc-500">Poziom:</span> {item.level}</p>}
+          {duration && <p><span className="text-zinc-500">Czas trwania:</span> {duration}</p>}
+          <div className="mt-1 flex gap-2">
+            {item.row && <button type="button" onClick={() => onOpenClass(item.row!)} className="rounded-full border border-line px-3 py-1.5 font-semibold text-zinc-200 hover:border-accent hover:text-accent">Pełne informacje</button>}
+            {item.href && <Link href={item.href} className="rounded-full border border-line px-3 py-1.5 font-semibold text-zinc-200 hover:border-accent hover:text-accent">Otwórz</Link>}
+            {item.kind === "custom" ? <Link href="/konto" className="rounded-full border border-line px-3 py-1.5 font-semibold text-zinc-200 hover:border-accent hover:text-accent">Edytuj</Link> : <button type="button" onClick={onRemove} className="rounded-full border border-red-400/30 px-3 py-1.5 font-semibold text-red-300 hover:border-red-400/60">Usuń z planu</button>}
+          </div>
+        </div>
       )}
-      {item.kind === "class" && <HeartButton active={liked} onToggle={onLike} />}
-      <details className="relative shrink-0">
-        <summary className="flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-800 hover:text-zinc-100 [&::-webkit-details-marker]:hidden" aria-label="Więcej opcji">•••</summary>
-        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-line bg-zinc-950 p-1 shadow-xl">
-          {item.kind === "custom" ? (
-            <Link href="/konto" className="block rounded-md px-2.5 py-2 text-xs text-zinc-300 hover:bg-zinc-900">Edytuj w koncie</Link>
-          ) : (
-            <button type="button" onClick={onRemove} className="block w-full rounded-md px-2.5 py-2 text-left text-xs text-red-300 hover:bg-zinc-900">Usuń z planu</button>
-          )}
-        </div>
-      </details>
     </div>
   );
 }
@@ -701,14 +698,37 @@ function PendingConfirmationsCard({
   onConfirm: (row: ClassRow, occurrence: Date) => void;
   onSkip: (key: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <section className="rounded-2xl border border-accent/30 bg-accent/[0.07] p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-accent">Do potwierdzenia ({items.length})</p>
-      <h2 className="mt-1 font-heading text-base font-semibold text-zinc-50">Byłeś/aś na tych zajęciach?</h2>
-      <p className="mt-1 text-xs text-muted">Z Twojego planu, ostatnie 14 dni. Liczą się tylko potwierdzone.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-accent">Do potwierdzenia ({items.length})</p>
+          <h2 className="mt-1 font-heading text-base font-semibold text-zinc-50">Byłeś/aś na tych zajęciach?</h2>
+        </div>
+        {items.length > 1 && (
+          <button
+            type="button"
+            onClick={() => items.forEach((item) => onConfirm(item.row, item.occurrence))}
+            className="shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+          >
+            Byłem/am na wszystkich
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+        className="mt-1 flex items-center gap-1 text-xs text-muted hover:text-zinc-200"
+      >
+        {expanded ? "Zwiń listę" : `Pokaż ${items.length} ${pluralizeClasses(items.length)} do potwierdzenia`}
+        <ChevronRightIcon className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
+      </button>
+      {expanded && (
       <ul className="mt-3 flex flex-col divide-y divide-accent/15">
         {items.map((item) => (
-          <li key={item.key} className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0">
+          <li key={item.key} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-zinc-100">{item.row.title}</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
@@ -717,13 +737,14 @@ function PendingConfirmationsCard({
                 {item.row.startTime ? ` · ${item.row.startTime}` : ""} · <span className={schoolTextClass(item.row.school)}>{item.row.school}</span>
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => onConfirm(item.row, item.occurrence)} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">Byłem/am</button>
-              <button type="button" onClick={() => onSkip(item.key)} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500">Nie byłem/am</button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button type="button" onClick={() => onConfirm(item.row, item.occurrence)} aria-label="Byłem/am" title="Byłem/am" className="rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:bg-accent-dark">Byłem/am</button>
+              <button type="button" onClick={() => onSkip(item.key)} aria-label="Nie byłem/am" title="Nie byłem/am" className="rounded-md border border-line px-2 py-1 text-[11px] font-semibold text-zinc-300 hover:border-zinc-500">Nie</button>
             </div>
           </li>
         ))}
       </ul>
+      )}
     </section>
   );
 }
@@ -777,24 +798,7 @@ function FavoriteClassesSection({ favorites, plannedClassIds, onPlan, onLike, no
           <div className="divide-y divide-line">
             {favorites.map(({ row, when }) => {
               const id = `${row.school}-${row.id}`;
-              return (
-                <div key={id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:px-5">
-                  <div className="w-16 shrink-0">
-                    <p className="text-xs font-semibold text-violet">{formatDayLabel(when, now)}</p>
-                    <p className="font-heading text-base font-semibold tabular-nums text-zinc-100">{row.startTime}</p>
-                  </div>
-                  <div className="min-w-0 flex-[1_1_calc(100%-5rem)] sm:flex-1">
-                    <button type="button" onClick={() => onOpenClass(row)} className="block max-w-full truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent" aria-label={`Otwórz szczegóły zajęć ${row.title}`}>{row.title}</button>
-                    <p className="mt-0.5 truncate text-xs text-muted"><span className={schoolTextClass(row.school)}>{row.school}</span>{row.instructor ? ` · ${row.instructor}` : ""}</p>
-                    <button type="button" onClick={() => onOpenClass(row)} className="mt-1 text-[11px] font-semibold text-violet hover:text-accent">Szczegóły zajęć →</button>
-                  </div>
-                  <LevelBadge level={row.level} className="hidden md:inline-flex" />
-                  <div className="ml-16 flex basis-[calc(100%-4rem)] items-center gap-2 sm:ml-0 sm:basis-auto">
-                    <PlusButton active={plannedClassIds.has(id)} onToggle={() => onPlan(id)} label="Dodaj do planu" className="!border-accent/40 !text-accent hover:!border-accent" />
-                    <HeartButton active onToggle={() => onLike(id)} />
-                  </div>
-                </div>
-              );
+              return <UnifiedClassRow key={id} row={row} dateLabel={formatDayLabel(when, now)} planned={plannedClassIds.has(id)} liked onPlan={() => onPlan(id)} onLike={() => onLike(id)} planLabel="Dodaj do planu" tone="accent" onOpenDetails={() => onOpenClass(row)} />;
             })}
           </div>
         )}
@@ -869,11 +873,25 @@ function MiniCalendar({ items, onOpenClass }: { items: PlanItem[]; onOpenClass: 
   );
 }
 
-function RecommendedClassesSection({ recommendations, activeFilter, onFilter, plannedClassIds, likedClassIds, onPlan, onLike, now, preferencesComplete, onOpenClass }: { recommendations: RecommendedOccurrence[]; activeFilter: RecommendationFilter; onFilter: (filter: RecommendationFilter) => void; plannedClassIds: Set<string>; likedClassIds: Set<string>; onPlan: (id: string) => void; onLike: (id: string) => void; now: Date; preferencesComplete: boolean; onOpenClass: (row: ClassRow) => void }) {
+function RecommendedClassesSection({ recommendations, activeFilter, onFilter, plannedClassIds, onPlan, preferencesComplete, onOpenClass }: { recommendations: RecommendedOccurrence[]; activeFilter: RecommendationFilter; onFilter: (filter: RecommendationFilter) => void; plannedClassIds: Set<string>; onPlan: (id: string) => void; preferencesComplete: boolean; onOpenClass: (row: ClassRow) => void }) {
+  const groupedRecommendations = useMemo(() => {
+    const grouped = new Map<string, { date: Date; items: RecommendedOccurrence[] }>();
+    for (const item of recommendations) {
+      const key = toLocalIsoDate(item.when);
+      const group = grouped.get(key) ?? { date: item.when, items: [] };
+      group.items.push(item);
+      grouped.set(key, group);
+    }
+    return Array.from(grouped.entries());
+  }, [recommendations]);
   return (
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">Dopasowane do Ciebie</p><h2 className="mt-1 font-heading text-xl font-semibold text-zinc-50">Propozycje na dziś i jutro dla Ciebie</h2></div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">Dopasowane do Ciebie</p>
+          <h2 className="mt-1 font-heading text-xl font-semibold text-zinc-50">Propozycje na dziś i jutro dla Ciebie</h2>
+          <Link href="/grafik" className="mt-1 inline-block text-xs font-semibold text-accent hover:text-accent-peach">Zobacz wszystkie zajęcia →</Link>
+        </div>
         <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
           {[{ key: "for-you", label: "Dla Ciebie" }, { key: "all", label: "Wszystkie zajęcia" }, { key: "level", label: "Pasuje do poziomu" }].map((item) => (
             <button key={item.key} type="button" onClick={() => onFilter(item.key as RecommendationFilter)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${activeFilter === item.key ? "border-accent bg-accent/10 text-accent" : "border-line text-zinc-400 hover:text-zinc-100"}`}>{item.label}</button>
@@ -881,24 +899,9 @@ function RecommendedClassesSection({ recommendations, activeFilter, onFilter, pl
         </div>
       </div>
       {!preferencesComplete && activeFilter !== "all" && <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet/25 bg-violet/[0.07] px-4 py-3 text-xs text-zinc-300"><span>Uzupełnij poziom, dni i format, aby propozycje były naprawdę osobiste.</span><Link href="/konto#preferencje" className="font-semibold text-violet hover:text-accent">Ustaw preferencje →</Link></div>}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-zinc-900/45">
-        {recommendations.length === 0 ? <p className="p-8 text-center text-sm text-muted">Brak nowych propozycji na najbliższe dni.</p> : <div className="divide-y divide-line">
-          {recommendations.map(({ row, when, matchReason }) => {
-            const id = `${row.school}-${row.id}`;
-            return (
-              <div key={id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:px-5">
-                <div className="w-16 shrink-0"><p className="text-xs font-semibold text-accent">{formatDayLabel(when, now)}</p><p className="font-heading text-base font-semibold tabular-nums text-zinc-100">{row.startTime}</p></div>
-                <div className="min-w-0 flex-[1_1_calc(100%-5rem)] sm:flex-1"><button type="button" onClick={() => onOpenClass(row)} className="block max-w-full truncate text-left text-sm font-semibold text-zinc-100 hover:text-accent" aria-label={`Otwórz szczegóły zajęć ${row.title}`}>{row.title}</button><p className="mt-0.5 truncate text-xs text-muted"><span className={schoolTextClass(row.school)}>{row.school}</span>{row.instructor ? ` · ${row.instructor}` : ""}</p><button type="button" onClick={() => onOpenClass(row)} className="mt-1 text-[11px] font-semibold text-violet hover:text-accent">Szczegóły zajęć →</button></div>
-                <div className="ml-16 flex basis-[calc(100%-4rem)] items-center gap-2 sm:ml-0 sm:basis-auto">
-                  <LevelBadge level={row.level} className="hidden md:inline-flex" />
-                  {activeFilter === "level" && <span className="hidden rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 xl:inline-flex">Pasuje do poziomu</span>}
-                  {activeFilter === "for-you" && matchReason && <span className="hidden rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-300 xl:inline-flex">{matchReason}</span>}
-                  <PlusButton active={plannedClassIds.has(id)} onToggle={() => onPlan(id)} label="Dodaj do planu" className="!border-accent/40 !text-accent hover:!border-accent" />
-                  <HeartButton active={likedClassIds.has(id)} onToggle={() => onLike(id)} />
-                </div>
-              </div>
-            );
-          })}
+      <div className="mt-4">
+        {recommendations.length === 0 ? <p className="p-8 text-center text-sm text-muted">Brak nowych propozycji na najbliższe dni.</p> : <div className="grid gap-2 lg:grid-cols-2 lg:items-start">
+          {groupedRecommendations.map(([key, group], groupIndex) => <UnifiedClassDayGroup key={key} date={group.date} count={group.items.length} defaultOpen={groupIndex === 0}>{group.items.map(({ row, matchReason }) => { const id = `${row.school}-${row.id}`; return <div key={id}><UnifiedClassRow row={row} planned={plannedClassIds.has(id)} onPlan={() => onPlan(id)} tone="accent" onOpenDetails={() => onOpenClass(row)} />{((activeFilter === "level") || (activeFilter === "for-you" && matchReason)) && <p className="-mt-1 mb-2 ml-[3.8rem] text-[10px] text-zinc-500">{activeFilter === "level" ? "Pasuje do Twojego poziomu" : matchReason}</p>}</div>; })}</UnifiedClassDayGroup>)}
         </div>}
       </div>
     </section>

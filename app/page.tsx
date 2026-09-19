@@ -1,6 +1,5 @@
 import {
   getCurrentSchedule,
-  getInstructors,
   getUpcomingEvents,
   getUserActivity,
   getUserClasses,
@@ -11,30 +10,23 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { OnboardingSurveyModal } from "@/components/OnboardingSurveyModal";
 import { Header } from "@/components/Header";
+import { HomeJourney } from "@/components/HomeJourney";
 import { SearchBar } from "@/components/SearchBar";
-import { QuickFilterBar } from "@/components/QuickFilterBar";
-import { Hero } from "@/components/Hero";
 import { UpcomingClassesPreview } from "@/components/UpcomingClassesPreview";
-import { PlanShowcase } from "@/components/PlanShowcase";
 import { HomeEventsSection } from "@/components/HomeEventsSection";
-import { HowItWorks } from "@/components/HowItWorks";
-import { StatsTeaser } from "@/components/StatsTeaser";
-import { HomeLearningMusic } from "@/components/HomeLearningMusic";
-import { HomeConversionCta } from "@/components/HomeConversionCta";
+import { HomePlaylists } from "@/components/HomePlaylists";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { UserDashboard } from "@/components/dashboard/UserDashboard";
-import { SCHOOL_NAMES } from "@/lib/schools";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
   const schedule = getCurrentSchedule();
   const upcomingEvents = getUpcomingEvents();
-  const schools = SCHOOL_NAMES;
-  const styles = Array.from(new Set(schedule.map((r) => r.danceStyle).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pl"));
+  const { preview } = await searchParams;
   const user = await getCurrentUser();
 
-  if (user) {
+  if (user && preview !== "landing") {
     const [preferences, favorites, activity, customClasses, eventActivity] = await Promise.all([
       getUserPreferences(user.id),
       getUserFavorites(user.id),
@@ -85,24 +77,22 @@ export default async function Home() {
     );
   }
 
-  const instructorCount = getInstructors().length;
-  const eventCount = upcomingEvents.length;
-  const classCount = schedule.length;
-
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 sm:py-8">
       <Header />
-      <Hero classCount={classCount} schoolCount={schools.length} eventCount={eventCount} />
-      <SearchBar />
-      <QuickFilterBar schools={schools} styles={styles} />
-
-      <HowItWorks />
-      <UpcomingClassesPreview schedule={schedule} loggedIn={false} />
-      <PlanShowcase schedule={schedule} />
-      <HomeLearningMusic />
-      <HomeEventsSection events={upcomingEvents} loggedIn={false} />
-      <StatsTeaser classCount={classCount} schoolCount={schools.length} instructorCount={instructorCount} eventCount={eventCount} />
-      <HomeConversionCta />
+      <HomeJourney />
+      <div className="flex flex-col gap-6 sm:gap-8">
+        <section id="nadchodzacy-grafik" className="flex scroll-mt-4 flex-col gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Sprawdź, co tańczymy</p>
+            <h2 className="mt-1 font-heading text-2xl font-bold text-white">Nadchodzący grafik</h2>
+          </div>
+          <SearchBar />
+          <UpcomingClassesPreview schedule={schedule} loggedIn={false} />
+        </section>
+        <HomeEventsSection events={upcomingEvents} loggedIn={false} />
+        <HomePlaylists />
+      </div>
     </div>
   );
 }

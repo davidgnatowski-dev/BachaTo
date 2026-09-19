@@ -9,6 +9,7 @@ import {
   pluralizeClasses,
   scheduleDatesForFilter,
   scheduleOccurrencesForDates,
+  schoolAddress,
   schoolTextClass,
   splitInstructors,
 } from "@/lib/schedule";
@@ -16,13 +17,17 @@ import { toLocalIsoDate } from "@/lib/format";
 import { SCHOOL_NAMES } from "@/lib/schools";
 import { ClassCard } from "@/components/ClassCard";
 import { CompactClassRow } from "@/components/CompactClassRow";
+import { ScheduleWeekGrid } from "@/components/ScheduleWeekGrid";
+import { ScheduleMap } from "@/components/ScheduleMap";
+import { DayScheduleSlots, DayTimeline } from "@/components/DayTimeline";
 import { HourSelect } from "@/components/HourSelect";
+import { ChevronDownIcon } from "@/components/icons";
 import {
   classifyLevel,
   levelStyle,
-  levelDotClass,
   LEVEL_BUCKET_ORDER,
   LEVEL_BUCKET_LABELS,
+  LEVEL_BUCKET_LETTERS,
   type LevelBucket,
 } from "@/lib/level";
 
@@ -66,6 +71,7 @@ const QUICK_RANGES = [
 const VIEWS = [
   { key: "lista", label: "Lista" },
   { key: "tydzien", label: "Tydzień" },
+  { key: "mapa", label: "Mapa" },
 ] as const;
 type ViewMode = (typeof VIEWS)[number]["key"];
 
@@ -98,7 +104,9 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
   const [view, setView] = useState<ViewMode>("lista");
   const [timeFrom, setTimeFrom] = useState<string>("");
   const [timeTo, setTimeTo] = useState<string>("");
-  const [showMore, setShowMore] = useState(false);
+  // Auto-expand when a link lands here with ?school= or ?instructor= already set (e.g. a school's "Pełny grafik" link, or an instructor's profile) — otherwise the active filter would be invisible.
+  const [showMore, setShowMore] = useState(() => searchParams.get("school") !== null || searchParams.get("instructor") !== null);
+  const [levelPanelOpen, setLevelPanelOpen] = useState(() => searchParams.get("level") !== null);
   const [today] = useState(() => new Date());
 
   const filterBarRef = useRef<HTMLDivElement>(null);
@@ -126,6 +134,21 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
   }, [rows]);
 
   const activeDates = useMemo(() => scheduleDatesForFilter(dayFilter, today), [dayFilter, today]);
+  // Monday-anchored (unlike the "week" quick filter, which rolls 7 days from today) so the
+  // mobile day-scroller always reads Mon -> Sun in the same fixed order as the desktop chips.
+  const weekDates = useMemo(() => {
+    const currentWeekday = ((today.getDay() + 6) % 7) + 1; // 1=Mon..7=Sun
+    const monday = new Date(today);
+    monday.setDate(monday.getDate() - (currentWeekday - 1));
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      return toLocalIsoDate(d);
+    });
+  }, [today]);
+  const todayIsoForMobile = toLocalIsoDate(today);
+  const mobileSelectedIso =
+    activeDates.length === 1 ? activeDates[0] : activeDates.includes(todayIsoForMobile) ? todayIsoForMobile : activeDates[0];
 
   const filteredOccurrences = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -248,37 +271,10 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
             );
           })}
 
-          <select value={level} onChange={(e) => updateParam("level", e.target.value)} className={SELECT_CLASS}>
-            <option value={ALL}>Poziom</option>
-            {levels.map((b) => (
-              <option key={b} value={b}>
-                {LEVEL_BUCKET_LABELS[b]}
-              </option>
-            ))}
-          </select>
-
-          <select value={school} onChange={(e) => updateParam("school", e.target.value)} className={`${SELECT_CLASS} ${school === ALL ? "" : schoolTextClass(school)}`}>
-            <option value={ALL}>Szkoła</option>
-            {schools.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-
           <select value={format} onChange={(e) => updateParam("format", e.target.value)} className={SELECT_CLASS}>
             <option value={ALL}>Format</option>
             <option value="partner">W parach</option>
             <option value="solo">Solo</option>
-          </select>
-
-          <select value={instructor} onChange={(e) => updateParam("instructor", e.target.value)} className={SELECT_CLASS}>
-            <option value={ALL}>Instruktor</option>
-            {instructors.map((i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
           </select>
 
           <button
@@ -315,8 +311,8 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
           </div>
         </div>
 
-        {/* Quick day-of-week chips with real dates — jump to that day's section when the full week is visible */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Quick day-of-week chips with real dates — jump to that day's section when the full week is visible. On mobile the "lista" view has its own date strip inside DayTimeline, so this one only shows from lg: up there. */}
+        <div className={`flex-wrap items-center gap-1.5 ${view === "lista" ? "hidden lg:flex" : "flex"}`}>
           {DAY_CHIP_LABELS.map((label, idx) => {
             const weekday = idx + 1;
             const date = nextDateForWeekday(weekday, today);
@@ -346,6 +342,31 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
 
         {showMore && (
           <div className="flex flex-wrap items-end gap-3 border-t border-line pt-3">
+            <label className="flex flex-col gap-1 text-xs text-muted">
+              Szkoła
+              <select value={school} onChange={(e) => updateParam("school", e.target.value)} className={`${SELECT_CLASS} ${school === ALL ? "" : schoolTextClass(school)}`}>
+                <option value={ALL}>Wszystkie</option>
+                {schools.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              {school !== ALL && schoolAddress(school) && (
+                <span className="max-w-[220px] text-[11px] leading-snug text-muted">{schoolAddress(school)}</span>
+              )}
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted">
+              Instruktor
+              <select value={instructor} onChange={(e) => updateParam("instructor", e.target.value)} className={SELECT_CLASS}>
+                <option value={ALL}>Wszyscy</option>
+                {instructors.map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </label>
             <HourSelect label="Godzina od" value={timeFrom || null} onChange={(v) => setTimeFrom(v ?? "")} />
             <HourSelect label="Godzina do" value={timeTo || null} onChange={(v) => setTimeTo(v ?? "")} />
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
@@ -366,25 +387,41 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted">Poziom (kropka przy nazwie):</span>
-        {levels.map((b) => {
-          const colors = levelStyle(b);
-          const active = level === b;
-          return (
-            <button
-              key={b}
-              type="button"
-              onClick={() => updateParam("level", active ? ALL : b)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity hover:opacity-80 ${colors.bg} ${colors.text} ${
-                active ? `${colors.ring} ring-2` : colors.ring
-              }`}
-            >
-              <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${levelDotClass(b)}`} />
-              {LEVEL_BUCKET_LABELS[b]}
-            </button>
-          );
-        })}
+      <div>
+        <button
+          type="button"
+          onClick={() => setLevelPanelOpen((value) => !value)}
+          aria-expanded={levelPanelOpen}
+          className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-zinc-100"
+        >
+          Poziom
+          {level !== ALL && (
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${levelStyle(level as LevelBucket).bg} ${levelStyle(level as LevelBucket).text} ${levelStyle(level as LevelBucket).ring}`}>
+              {LEVEL_BUCKET_LETTERS[level as LevelBucket]}
+            </span>
+          )}
+          <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${levelPanelOpen ? "rotate-180" : ""}`} />
+        </button>
+        {levelPanelOpen && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {levels.map((b) => {
+              const colors = levelStyle(b);
+              const active = level === b;
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => updateParam("level", active ? ALL : b)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity hover:opacity-80 ${colors.bg} ${colors.text} ${
+                    active ? `${colors.ring} ring-2` : colors.ring
+                  }`}
+                >
+                  {LEVEL_BUCKET_LETTERS[b]} - {LEVEL_BUCKET_LABELS[b]}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -392,34 +429,58 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
           Brak zajęć spełniających wybrane kryteria.
         </p>
       ) : view === "lista" ? (
-        // One column grouped by actual occurrence date, so one-off classes never leak into a different week.
-        <div className="flex flex-col">
-          {activeDates.map((iso) => {
-            const dayRows = groups.get(iso) ?? [];
-            if (dayRows.length === 0) return null;
-            const date = new Date(`${iso}T12:00:00`);
-            const weekday = ((date.getDay() + 6) % 7) + 1;
-            const prefix = iso === todayIso ? "Dzisiaj, " : iso === tomorrowIso ? "Jutro, " : "";
-            const heading = `${prefix}${DAY_LABELS[weekday - 1]} ${date.getDate()} ${MONTH_GENITIVE[date.getMonth()]}`;
-            return (
-              <div key={iso} id={`day-${iso}`} style={{ scrollMarginTop: filterBarHeight }} className="mt-2 first:mt-0">
-                <div
-                  className="sticky z-10 -mx-4 border-b-2 border-line bg-black/70 px-4 py-3 shadow-lg shadow-black/40 backdrop-blur sm:mx-0 sm:rounded-t-lg sm:border sm:px-4"
-                  style={{ top: filterBarHeight }}
-                >
-                  <h2 className="font-heading text-lg font-bold text-zinc-50 sm:text-xl">
-                    {heading} <span className="text-sm font-normal text-muted">· {dayRows.length} {pluralizeClasses(dayRows.length)}</span>
-                  </h2>
-                </div>
-                <div className="flex flex-col">
-                  {dayRows.map((row) => (
-                    <CompactClassRow key={`${row.school}-${row.id}`} row={row} allRows={rows} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <>
+          {/* One day at a time on mobile, navigated via the horizontal date strip. */}
+          <div className="lg:hidden">
+            <DayTimeline
+              weekDates={weekDates}
+              selectedIso={mobileSelectedIso}
+              groups={groups}
+              allRows={rows}
+              todayIso={todayIso}
+              tomorrowIso={tomorrowIso}
+              onSelectWeekday={(weekday) => updateParam("day", String(weekday))}
+            />
+          </div>
+
+          {/* Full week as one scrollable list from lg: up. */}
+          <div className="hidden lg:block">
+            <p className="mb-1 flex items-center gap-1.5 text-xs text-muted">
+              <ChevronDownIcon className="h-3 w-3 shrink-0" />
+              Instruktorzy, sala i pełny poziom pojawiają się po rozwinięciu wiersza.
+            </p>
+            {/* One column grouped by actual occurrence date, so one-off classes never leak into a different week. */}
+            <div className="flex flex-col">
+              {activeDates.map((iso) => {
+                const dayRows = groups.get(iso) ?? [];
+                if (dayRows.length === 0) return null;
+                const date = new Date(`${iso}T12:00:00`);
+                const weekday = ((date.getDay() + 6) % 7) + 1;
+                const prefix = iso === todayIso ? "Dzisiaj, " : iso === tomorrowIso ? "Jutro, " : "";
+                const heading = `${prefix}${DAY_LABELS[weekday - 1]} ${date.getDate()} ${MONTH_GENITIVE[date.getMonth()]}`;
+                return (
+                  <div key={iso} id={`day-${iso}`} style={{ scrollMarginTop: filterBarHeight }} className="mt-2 first:mt-0">
+                    <div
+                      className="sticky z-10 -mx-4 border-b-2 border-line bg-black/70 px-4 py-3 shadow-lg shadow-black/40 backdrop-blur sm:mx-0 sm:rounded-t-lg sm:border sm:px-4"
+                      style={{ top: filterBarHeight }}
+                    >
+                      <h2 className="font-heading text-lg font-bold text-zinc-50 sm:text-xl">
+                        {heading} <span className="text-sm font-normal text-muted">· {dayRows.length} {pluralizeClasses(dayRows.length)}</span>
+                      </h2>
+                    </div>
+                    <div className="flex flex-col">
+                      {dayRows.map((row) => (
+                        <CompactClassRow key={`${row.school}-${row.id}`} row={row} allRows={rows} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : view === "mapa" ? (
+        <ScheduleMap rows={filtered} allRows={rows} />
       ) : activeDates.length === 1 ? (
         <div className="grid grid-cols-1 gap-3 sm:max-w-sm">
           {(groups.get(activeDates[0]) ?? []).map((row) => (
@@ -427,27 +488,33 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
           ))}
         </div>
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${activeDates.length === 2 ? "sm:grid-cols-2 sm:max-w-2xl" : "sm:grid-cols-2 lg:grid-cols-7"}`}>
-          {activeDates.map((iso) => {
-            const dayRows = groups.get(iso) ?? [];
-            const date = new Date(`${iso}T12:00:00`);
-            const weekday = ((date.getDay() + 6) % 7) + 1;
-            return (
-              <div key={iso} className="flex flex-col gap-2">
-                <h2 className="font-heading text-sm font-semibold text-zinc-300">
-                  {DAY_LABELS[weekday - 1]} {date.getDate()}.{String(date.getMonth() + 1).padStart(2, "0")}
-                </h2>
-                <div className="flex flex-col gap-2">
-                  {dayRows.length === 0 ? (
-                    <p className="text-xs text-muted">brak zajęć</p>
-                  ) : (
-                    dayRows.map((row) => <ClassCard key={`${row.school}-${row.id}`} row={row} allRows={rows} />)
-                  )}
+        <>
+          {/* Stacked day columns on mobile/tablet; a real hour-by-day grid takes over from lg: up. */}
+          <div className={`grid grid-cols-1 gap-4 lg:hidden ${activeDates.length === 2 ? "sm:grid-cols-2 sm:max-w-2xl" : "sm:grid-cols-2"}`}>
+            {activeDates.map((iso) => {
+              const dayRows = groups.get(iso) ?? [];
+              const date = new Date(`${iso}T12:00:00`);
+              const weekday = ((date.getDay() + 6) % 7) + 1;
+              return (
+                <div key={iso} className="flex flex-col gap-2">
+                  <h2 className="font-heading text-sm font-semibold text-zinc-300">
+                    {DAY_LABELS[weekday - 1]} {date.getDate()}.{String(date.getMonth() + 1).padStart(2, "0")}
+                  </h2>
+                  <div>
+                    {dayRows.length === 0 ? (
+                      <p className="text-xs text-muted">brak zajęć</p>
+                    ) : (
+                      <DayScheduleSlots rows={dayRows} allRows={rows} />
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          <div className="hidden lg:block">
+            <ScheduleWeekGrid activeDates={activeDates} groups={groups} allRows={rows} todayIso={todayIso} />
+          </div>
+        </>
       )}
     </div>
   );

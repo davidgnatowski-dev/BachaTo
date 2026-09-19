@@ -206,14 +206,10 @@ export function formatDatePl(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
-/** A stable color identity for each Warsaw school, reused wherever its name is shown. */
+/** Keep school names visually consistent; color is reserved for levels and actions. */
 export function schoolTextClass(school?: string | null): string {
-  if (school === "Salsa Libre") return "text-red-400";
-  if (school === "Warsaw Salsa Club") return "text-emerald-400";
-  if (school === "Abra Studio") return "text-amber-300";
-  if (school === "Oye!") return "text-sky-400";
-  if (school === "Viva Cuba") return "text-fuchsia-400";
-  return "text-violet";
+  void school;
+  return "text-zinc-300";
 }
 
 export function schoolStyle(school?: string | null) {

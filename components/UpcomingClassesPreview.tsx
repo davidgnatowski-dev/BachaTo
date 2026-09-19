@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ClassRow } from "@/lib/types";
-import { DAY_LABELS, groupByDay, nextOccurrences, schoolTextClass, splitInstructors } from "@/lib/schedule";
+import { DAY_LABELS, groupByDay, nextOccurrences, scheduleDatesForFilter, scheduleOccurrencesForDates } from "@/lib/schedule";
 import { useFavorites } from "@/lib/favorites";
-import { HeartButton } from "@/components/HeartButton";
-import { PlusButton } from "@/components/PlusButton";
 import { AddToPlanModal } from "@/components/AddToPlanModal";
-import { LevelDot, LevelBadge } from "@/components/LevelDot";
-import { InstructorAvatarGroup } from "@/components/InstructorAvatar";
+import { ScheduleWeekGrid } from "@/components/ScheduleWeekGrid";
+import { UnifiedClassRow } from "@/components/UnifiedClassRow";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
+import { UnifiedClassDayGroup } from "@/components/UnifiedClassDayGroup";
+import { toLocalIsoDate } from "@/lib/format";
 
 const VIEWS = [
   { key: "lista", label: "Lista" },
@@ -29,10 +30,30 @@ const PREVIEW_COUNT = 5;
 export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: ClassRow[]; loggedIn: boolean }) {
   const [view, setView] = useState<View>("lista");
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<ClassRow | null>(null);
   const { likedClassIds, plannedClassIds, toggleLikeClass, togglePlanClass } = useFavorites();
 
   const listItems = useMemo(() => nextOccurrences(schedule, new Date(), PREVIEW_COUNT), [schedule]);
+  const homeGroups = useMemo(() => {
+    const grouped = new Map<string, { date: Date; rows: ClassRow[] }>();
+    for (const item of nextOccurrences(schedule, new Date(), 16)) {
+      const key = toLocalIsoDate(item.when);
+      const group = grouped.get(key) ?? { date: item.when, rows: [] };
+      if (!group.rows.some((row) => row.id === item.row.id && row.school === item.row.school)) group.rows.push(item.row);
+      grouped.set(key, group);
+    }
+    return Array.from(grouped.entries()).slice(0, 4);
+  }, [schedule]);
   const weekGroups = useMemo(() => groupByDay(schedule), [schedule]);
+  const homeWeekDates = useMemo(() => scheduleDatesForFilter("week", new Date()), []);
+  const homeWeekGroups = useMemo(() => {
+    const grouped = new Map<string, ClassRow[]>();
+    for (const iso of homeWeekDates) grouped.set(iso, []);
+    for (const occurrence of scheduleOccurrencesForDates(schedule, homeWeekDates)) {
+      grouped.get(occurrence.dateIso)?.push(occurrence.row);
+    }
+    return grouped;
+  }, [homeWeekDates, schedule]);
 
   if (schedule.length === 0) return null;
 
@@ -44,8 +65,36 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
     togglePlanClass(favoriteId);
   }
 
+  if (!loggedIn) {
+    return (
+      <section className="flex flex-col gap-3 rounded-3xl border border-line bg-[radial-gradient(circle_at_top_right,rgba(255,106,24,.08),transparent_34%),rgba(24,24,27,.6)] p-4 sm:p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-zinc-50">Najbliższe zajęcia</h2>
+          <Link href="/grafik" className="shrink-0 text-xs font-semibold text-accent hover:text-accent-peach">Zobacz wszystkie →</Link>
+        </div>
+
+        <div className="flex flex-col gap-3 lg:hidden">
+          {homeGroups.map(([key, group], index) => <UnifiedClassDayGroup key={key} date={group.date} count={group.rows.length} defaultOpen={index === 0}>{group.rows.map((row) => { const favoriteId = `${row.school}-${row.id}`; return <UnifiedClassRow key={favoriteId} row={row} planned={plannedClassIds.has(favoriteId)} onPlan={() => handleTogglePlan(favoriteId)} tone="accent" onOpenDetails={() => setSelectedRow(row)} />; })}</UnifiedClassDayGroup>)}
+        </div>
+
+        <div className="hidden lg:block">
+          <ScheduleWeekGrid
+            activeDates={homeWeekDates}
+            groups={homeWeekGroups}
+            allRows={schedule}
+            todayIso={homeWeekDates[0]}
+            onPlanToggle={(row) => handleTogglePlan(`${row.school}-${row.id}`)}
+          />
+        </div>
+
+        {authPromptOpen && <AddToPlanModal onClose={() => setAuthPromptOpen(false)} />}
+        {selectedRow && <ClassDetailModal row={selectedRow} allRows={schedule} onClose={() => setSelectedRow(null)} />}
+      </section>
+    );
+  }
+
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-line bg-zinc-900/60 p-4">
+    <section className="flex flex-col gap-4 rounded-3xl border border-line bg-[radial-gradient(circle_at_top_right,rgba(255,106,24,.08),transparent_34%),rgba(24,24,27,.6)] p-4 sm:p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-zinc-50">Najbliższe zajęcia</h2>
         {loggedIn ? (
@@ -74,52 +123,7 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
         <div className="flex flex-col divide-y divide-line">
           {listItems.map(({ row, label }) => {
             const favoriteId = `${row.school}-${row.id}`;
-            const instructorNames = splitInstructors(row.instructor);
-            return (
-              <div key={favoriteId} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0">
-                <div className="w-14 shrink-0">
-                  <p className="text-sm font-semibold tabular-nums text-accent">{row.startTime}</p>
-                  <p className="text-[11px] text-muted">{label}</p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-100">
-                    <LevelDot level={row.level} className="mr-1.5 align-middle" />
-                    {row.title}
-                  </p>
-                  <p className="truncate text-xs text-muted">
-                    <Link href={`/szkoly/${encodeURIComponent(row.school)}`} className={`${schoolTextClass(row.school)} hover:underline`}>
-                      {row.school}
-                    </Link>
-                  </p>
-                </div>
-                {instructorNames.length > 0 && (
-                  <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted sm:flex">
-                    <InstructorAvatarGroup names={instructorNames} photos={row.instructorPhotos} sizeClassName="h-6 w-6" />
-                    {instructorNames.map((name, i) => (
-                      <span key={name}>
-                        {i > 0 && ", "}
-                        <Link href={`/instruktorzy/${encodeURIComponent(name)}`} className="hover:text-zinc-200 hover:underline">
-                          {name}
-                        </Link>
-                      </span>
-                    ))}
-                  </span>
-                )}
-                <LevelBadge level={row.level} className={`shrink-0 ${loggedIn ? "hidden sm:inline-flex" : ""}`} />
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {loggedIn ? (
-                    <PlusButton active={plannedClassIds.has(favoriteId)} onToggle={() => togglePlanClass(favoriteId)} />
-                  ) : (
-                    <PlusButton
-                      active={plannedClassIds.has(favoriteId)}
-                      onToggle={() => handleTogglePlan(favoriteId)}
-                      label="Dodaj do planu"
-                    />
-                  )}
-                  <HeartButton active={likedClassIds.has(favoriteId)} onToggle={() => toggleLikeClass(favoriteId)} />
-                </div>
-              </div>
-            );
+            return <UnifiedClassRow key={favoriteId} row={row} dateLabel={label} planned={plannedClassIds.has(favoriteId)} liked={likedClassIds.has(favoriteId)} onPlan={() => togglePlanClass(favoriteId)} onLike={() => toggleLikeClass(favoriteId)} onOpenDetails={() => setSelectedRow(row)} />;
           })}
         </div>
       ) : (
@@ -145,6 +149,7 @@ export function UpcomingClassesPreview({ schedule, loggedIn }: { schedule: Class
       )}
 
       {authPromptOpen && <AddToPlanModal onClose={() => setAuthPromptOpen(false)} />}
+      {selectedRow && <ClassDetailModal row={selectedRow} allRows={schedule} onClose={() => setSelectedRow(null)} />}
     </section>
   );
 }
