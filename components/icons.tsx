@@ -293,3 +293,14 @@ export function GridIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function FilterIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <path d="M2 4h12M4.5 8h7M7 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="5.5" cy="4" r="1.4" fill="currentColor" stroke="#0b0e16" strokeWidth="0.6" />
+      <circle cx="10.5" cy="8" r="1.4" fill="currentColor" stroke="#0b0e16" strokeWidth="0.6" />
+      <circle cx="8" cy="12" r="1.4" fill="currentColor" stroke="#0b0e16" strokeWidth="0.6" />
+    </svg>
+  );
+}

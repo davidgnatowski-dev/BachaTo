@@ -21,7 +21,7 @@ import { ScheduleWeekGrid } from "@/components/ScheduleWeekGrid";
 import { ScheduleMap } from "@/components/ScheduleMap";
 import { DayScheduleSlots, DayTimeline } from "@/components/DayTimeline";
 import { HourSelect } from "@/components/HourSelect";
-import { ChevronDownIcon } from "@/components/icons";
+import { ChevronDownIcon, FilterIcon } from "@/components/icons";
 import {
   classifyLevel,
   levelStyle,
@@ -199,6 +199,9 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
     query !== "" ||
     preferenceOnly;
   const hasSavedPreferences = Boolean(preferences && hasUserPreferences(preferences));
+  // Filters tucked behind "Więcej filtrów" — surfaced as a count badge so it's obvious there's
+  // something active back there even while the panel itself is collapsed.
+  const hiddenFiltersCount = [school !== ALL, instructor !== ALL, timeFrom !== "", timeTo !== ""].filter(Boolean).length;
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -280,9 +283,20 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
           <button
             type="button"
             onClick={() => setShowMore((v) => !v)}
-            className="rounded-full border border-line px-3.5 py-1.5 text-sm font-semibold text-zinc-300 hover:border-zinc-500"
+            aria-expanded={showMore}
+            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              showMore || hiddenFiltersCount > 0
+                ? "border-accent/60 bg-accent/10 text-accent hover:border-accent"
+                : "border-line text-zinc-300 hover:border-zinc-500"
+            }`}
           >
+            <FilterIcon className="h-4 w-4" />
             {showMore ? "Mniej filtrów" : "Więcej filtrów"}
+            {!showMore && hiddenFiltersCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                {hiddenFiltersCount}
+              </span>
+            )}
           </button>
 
           {hasActiveFilters && (
