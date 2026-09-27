@@ -187,6 +187,15 @@ export function pluralizeClasses(n: number): string {
   return "zajęć";
 }
 
+/** Polish plural forms for "tydzień" (week): 1 / 2-4 / 5+. */
+export function pluralizeWeeks(n: number): string {
+  if (n === 1) return "tydzień";
+  const lastDigit = n % 10;
+  const lastTwo = n % 100;
+  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "tygodnie";
+  return "tygodni";
+}
+
 /** "55 min" / "1 godz." / "1 godz. 25 min" from start/end times, or undefined if either is missing. */
 export function formatDuration(startTime?: string, endTime?: string): string | undefined {
   if (!startTime || !endTime) return undefined;

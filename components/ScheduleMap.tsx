@@ -22,6 +22,15 @@ const SCHOOLS = Object.keys(SCHOOL_COORDS) as School[];
  * currently-filtered classes list in the sidebar, and clicking one of those
  * opens the same ClassDetailModal used everywhere else in the schedule.
  */
+function styleMarker(el: HTMLElement, active: boolean) {
+  el.classList.toggle("border-white", active);
+  el.classList.toggle("bg-accent", active);
+  el.classList.toggle("ring-4", active);
+  el.classList.toggle("ring-accent/40", active);
+  el.classList.toggle("border-white/90", !active);
+  el.classList.toggle("bg-violet", !active);
+}
+
 export function ScheduleMap({ rows, allRows }: { rows: ClassRow[]; allRows: ClassRow[] }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -160,16 +169,9 @@ export function ScheduleMap({ rows, allRows }: { rows: ClassRow[]; allRows: Clas
   // Restyle the selected/unselected pins in place whenever the selection changes — toggling
   // individual classes (not replacing className) so MapLibre's own marker classes survive.
   useEffect(() => {
-    for (const [school, entry] of markersRef.current) {
-      const active = effectiveSelectedSchool === school;
-      entry.el.classList.toggle("border-white", active);
-      entry.el.classList.toggle("bg-accent", active);
-      entry.el.classList.toggle("ring-4", active);
-      entry.el.classList.toggle("ring-accent/40", active);
-      entry.el.classList.toggle("border-white/90", !active);
-      entry.el.classList.toggle("bg-violet", !active);
-    }
-  }, [effectiveSelectedSchool, schoolsWithClasses]);
+    for (const [school, entry] of markersRef.current) styleMarker(entry.el, effectiveSelectedSchool === school);
+    // `ready` too: markers are only created once the map has loaded, after the first run of this effect.
+  }, [ready, effectiveSelectedSchool, schoolsWithClasses]);
 
   function focusSchool(school: School) {
     setSelectedSchool(school);

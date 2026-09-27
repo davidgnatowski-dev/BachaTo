@@ -1,5 +1,6 @@
 "use client";
 
+import { pluralizeWeeks } from "@/lib/schedule";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -78,7 +79,7 @@ export function DashboardSidebar({ streak, active = "start" }: { streak?: number
       <div className="mt-auto rounded-xl border border-line bg-zinc-950/60 p-3.5">
         <p className="text-lg" aria-hidden="true">🔥</p>
         <p className="mt-1 text-sm font-semibold text-zinc-100">
-          {streak === undefined ? "Twój taneczny panel" : streak > 0 ? `${streak} ${streak === 1 ? "tydzień" : "tygodni"} z rzędu!` : "Zacznij swoją passę"}
+          {streak === undefined ? "Twój taneczny panel" : streak > 0 ? `${streak} ${pluralizeWeeks(streak)} z rzędu!` : "Zacznij swoją passę"}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-muted">
           {streak === undefined ? "Plan, ulubione i statystyki masz zawsze pod ręką." : streak > 0 ? "Świetna robota. Nie przerywaj passy!" : "Potwierdź pierwsze zajęcia i obserwuj postępy."}

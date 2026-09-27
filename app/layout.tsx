@@ -21,8 +21,15 @@ export const metadata: Metadata = {
   description: "Grafik zajęć bachaty w warszawskich szkołach tańca, aktualizowany automatycznie.",
 };
 
+const EMPTY_STATS = { classCount: 0, schoolCount: 0, eventCount: 0, cityCount: 0 };
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const stats = getStats();
+  let stats = EMPTY_STATS;
+  try {
+    stats = getStats();
+  } catch (error) {
+    console.error("getStats() failed in root layout", error);
+  }
 
   return (
     <html

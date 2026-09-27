@@ -327,8 +327,10 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
 
         {/* Quick day-of-week chips with real dates — jump to that day's section when the full week is visible. On mobile the "lista" view has its own date strip inside DayTimeline, so this one only shows from lg: up there. */}
         <div className={`flex-wrap items-center gap-1.5 ${view === "lista" ? "hidden lg:flex" : "flex"}`}>
-          {DAY_CHIP_LABELS.map((label, idx) => {
-            const weekday = idx + 1;
+          {/* Each chip is the *next* occurrence of that weekday, so list them chronologically from today (e.g. on a Sunday: ND 27, PON 28 … SOB 3) rather than PON…ND, which would put today last. */}
+          {DAY_CHIP_LABELS.map((_, offset) => {
+            const weekday = ((today.getDay() + 6 + offset) % 7) + 1;
+            const label = DAY_CHIP_LABELS[weekday - 1];
             const date = nextDateForWeekday(weekday, today);
             const active = specificDayValue === String(weekday);
             const chipIso = toLocalIsoDate(date);
