@@ -20,7 +20,7 @@ export function YouTubeLessonCard({ videoId, title, lessonNumber, instructor }: 
             <iframe
               ref={playerRef}
               src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&origin=${encodeURIComponent(pageOrigin)}&widget_referrer=${encodeURIComponent(pageOrigin)}`}
-              title={`${title} — lekcja ${lessonNumber}`}
+              title={`${title}, lekcja ${lessonNumber}`}
               className="h-full w-full border-0"
               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               referrerPolicy="origin-when-cross-origin"

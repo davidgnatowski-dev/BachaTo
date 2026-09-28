@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentSchedule, getInstructors } from "@/lib/db";
@@ -8,6 +9,15 @@ import { InstructorFollowButton } from "@/components/InstructorFollowButton";
 import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  const name = decodeURIComponent((await params).name);
+  const classes = getCurrentSchedule().filter((row) => splitInstructors(row.instructor).includes(name));
+  if (classes.length === 0) return {};
+  const schools = Array.from(new Set(classes.map((row) => row.school))).join(", ");
+  const description = `${name} uczy bachaty w: ${schools}. W aktualnym grafiku: ${classes.length} ${pluralizeClasses(classes.length)}.`;
+  return { title: `${name}: instruktor bachaty`, description, openGraph: { title: `${name}: instruktor bachaty`, description } };
+}
 
 export default async function InstructorProfilePage({ params }: { params: Promise<{ name: string }> }) {
   const { name: rawName } = await params;

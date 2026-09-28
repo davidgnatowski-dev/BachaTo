@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getUpcomingEvents } from "@/lib/db";
 import { EventsExplorer } from "@/components/EventsExplorer";
@@ -5,6 +6,12 @@ import { DataFreshnessBanner } from "@/components/DataFreshnessBanner";
 import { TabNav } from "@/components/TabNav";
 import { Header } from "@/components/Header";
 import { EVENT_SOURCES } from "@/lib/events";
+
+
+export const metadata: Metadata = {
+  title: "Wydarzenia bachatowe: festiwale, sociale i zawody",
+  description: "Festiwale, praktyka taneczna, wyjazdy i zawody bachatowe w Polsce i na świecie.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +24,9 @@ export default function EventyPage() {
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Wydarzenia bachatowe — Polska i świat</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Wydarzenia bachatowe – Polska i świat</h1>
           <p className="mt-1 text-sm text-muted">
-            Praktyka taneczna, festiwale, wyjazdy i zawody — w tym oficjalne kwalifikacje Bachata Social World Cup. Filtruj po mieście, dacie i źródle.
+            Praktyka taneczna, festiwale, wyjazdy i zawody, w tym oficjalne kwalifikacje Bachata Social World Cup. Filtruj po mieście, dacie i źródle.
           </p>
         </div>
         <Link href="/dla-organizatorow" className="shrink-0 rounded-full border border-violet/50 px-4 py-2 text-sm font-semibold text-violet hover:bg-violet/10">

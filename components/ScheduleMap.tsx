@@ -130,7 +130,7 @@ export function ScheduleMap({ rows, allRows }: { rows: ClassRow[]; allRows: Clas
 
     for (const school of schoolsWithClasses) {
       const count = bySchool.get(school)?.length ?? 0;
-      const label = `${school} — ${count} ${pluralizeClasses(count)}, pokaż szczegóły`;
+      const label = `${school}: ${count} ${pluralizeClasses(count)}, pokaż szczegóły`;
       const existing = current.get(school);
       if (existing) {
         existing.el.textContent = String(count);

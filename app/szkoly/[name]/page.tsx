@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { School } from "@/lib/types";
 import { getCurrentSchedule, getUpcomingEvents, getUserActivity } from "@/lib/db";
@@ -21,6 +22,21 @@ export const dynamic = "force-dynamic";
 
 function assertSchool(value: string): asserts value is School {
   if (!SCHOOL_NAMES.includes(value as School)) notFound();
+}
+
+function truncate(text: string, max = 160): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  const name = decodeURIComponent((await params).name);
+  if (!SCHOOL_NAMES.includes(name as School)) return {};
+  const info = SCHOOL_INFO[name as School];
+  return {
+    title: `${name}: grafik zajęć bachaty`,
+    description: truncate(info.description),
+    openGraph: { title: `${name}: grafik zajęć bachaty`, description: truncate(info.description) },
+  };
 }
 
 export default async function SchoolProfilePage({ params }: { params: Promise<{ name: string }> }) {

@@ -34,7 +34,7 @@ export function NotificationSettingsForm({ preferences }: { preferences: Notific
     if (permission === "granted") {
       localStorage.setItem(BROWSER_KEY, "on");
       setBrowserEnabled(true);
-      setBrowserMessage("Gotowe — przypomnienia pojawią się, gdy BachaTo będzie otwarte.");
+      setBrowserMessage("Gotowe, przypomnienia pojawią się, gdy BachaTo będzie otwarte.");
     } else {
       setBrowserMessage("Nie udało się włączyć powiadomień. Sprawdź uprawnienia strony w przeglądarce.");
     }

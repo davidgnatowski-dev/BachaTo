@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { getSchoolProfiles } from "@/lib/db";
 import { SchoolCard } from "@/components/SchoolCard";
 import { TabNav } from "@/components/TabNav";
 import { Header } from "@/components/Header";
+
+
+export const metadata: Metadata = {
+  title: "Szkoły bachaty w Warszawie",
+  description: "Szkoły tańca z zajęciami bachaty w Warszawie: grafiki, instruktorzy, ceny i lokalizacje.",
+};
 
 export const dynamic = "force-dynamic";
 

@@ -76,7 +76,7 @@ export function specificDateFromTitle(title: string, referenceDate: Date): strin
  */
 export function scheduleDatesForFilter(dayFilter: string, today: Date): string[] {
   const base = addLocalDays(today, 0);
-  if (dayFilter === "today") return [toLocalIsoDate(base)];
+  if (dayFilter === "today" || dayFilter === "tonight") return [toLocalIsoDate(base)];
   if (dayFilter === "tomorrow") return [toLocalIsoDate(addLocalDays(base, 1))];
   if (dayFilter === "week") return Array.from({ length: 7 }, (_, index) => toLocalIsoDate(addLocalDays(base, index)));
   if (dayFilter === "weekend") {

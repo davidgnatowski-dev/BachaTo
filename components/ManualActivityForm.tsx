@@ -139,7 +139,7 @@ export function ManualActivityForm() {
       </div>
 
       <p className="text-xs text-muted">
-        Wpis jest prywatny — trafia tylko do Twoich statystyk. Zgłoszenie wydarzenia do publicznego kalendarza to osobna
+        Wpis jest prywatny i trafia tylko do Twoich statystyk. Zgłoszenie wydarzenia do publicznego kalendarza to osobna
         czynność (<Link href="/dla-organizatorow" className="underline hover:text-zinc-200">tutaj</Link>).
       </p>
     </form>

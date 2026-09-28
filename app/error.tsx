@@ -19,7 +19,7 @@ export default function ErrorPage({
       <p className="text-4xl">😵</p>
       <h1 className="font-heading text-xl font-semibold text-zinc-50">Coś poszło nie tak</h1>
       <p className="text-sm text-muted">
-        Nie udało się załadować tej strony. Spróbuj ponownie — jeśli problem się powtarza, wróć na stronę główną.
+        Nie udało się załadować tej strony. Spróbuj ponownie, a jeśli problem się powtarza, wróć na stronę główną.
       </p>
       <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
         <button

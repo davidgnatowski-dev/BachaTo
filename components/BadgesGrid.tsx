@@ -16,7 +16,7 @@ export function BadgesGrid({ badges, compact = false }: { badges: Badge[]; compa
         {shown.map((badge) => (
           <div
             key={badge.id}
-            title={`${badge.label} — ${badge.description}`}
+            title={`${badge.label}: ${badge.description}`}
             className={`min-w-0 rounded-xl border ${compact ? "flex items-center gap-2 p-2.5 text-left" : "flex flex-col items-center gap-1 p-3 text-center"} ${
               badge.earned
                 ? "border-zinc-600 bg-zinc-800/60"

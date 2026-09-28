@@ -16,7 +16,7 @@ export function SpotifyPlaylistCard({ playlist }: { playlist: SpotifyPlaylist })
       </div>
 
       <iframe
-        title={`Spotify — ${playlist.title}`}
+        title={`Spotify – ${playlist.title}`}
         src={`https://open.spotify.com/embed/playlist/${playlist.id}?utm_source=generator&theme=0`}
         width="100%"
         height="660"
@@ -34,7 +34,7 @@ export function SpotifyPlaylistCard({ playlist }: { playlist: SpotifyPlaylist })
       </p>
 
       <a href={`https://open.spotify.com/playlist/${playlist.id}`} target="_blank" rel="noopener noreferrer" aria-label={`Otwórz w Spotify: ${playlist.title} (nowa karta)`} className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-4 py-3 text-center text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet">
-        Pełna playlista bez przerw — otwórz w Spotify <span aria-hidden="true" className="ml-2">↗</span>
+        Pełna playlista bez przerw: otwórz w Spotify <span aria-hidden="true" className="ml-2">↗</span>
       </a>
     </article>
   );

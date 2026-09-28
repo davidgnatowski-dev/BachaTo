@@ -8,7 +8,7 @@ import { SearchAutocomplete } from "@/components/SearchAutocomplete";
 export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string; avatarEmoji: string | null; avatarUrl: string | null }) {
   return (
     <header className="flex min-h-16 items-center gap-3 border-b border-line/80 bg-background/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
-      <Link href="/" className="shrink-0" aria-label="BachaTo — strona główna">
+      <Link href="/" className="shrink-0" aria-label="BachaTo, strona główna">
         <Image src="/brand/logo-v4.png" alt="BachaTo" width={1254} height={1254} priority className="h-14 w-auto" />
       </Link>
 

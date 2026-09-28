@@ -21,7 +21,7 @@ function formatProgramDay(value: string) {
 function programCalendarUrl(event: EventRow, item: EventProgramItem) {
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: `${item.title} — ${event.title}`,
+    text: `${item.title} – ${event.title}`,
     dates: `${new Date(item.startAt).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}/${new Date(item.endAt ?? new Date(new Date(item.startAt).getTime() + 3600000)).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
     details: [item.instructors.join(", "), item.description, event.sourceUrl].filter(Boolean).join("\n\n"),
     location: [item.room, event.venue, event.address, event.city].filter(Boolean).join(", "),

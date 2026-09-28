@@ -15,7 +15,7 @@ export const CATEGORY_ORDER: EventCategory[] = ["festival", "trip", "social", "c
 export const CATEGORY_SECTION_TITLES: Record<EventCategory, string> = {
   festival: "Festiwale",
   trip: "Wyjazdy i obozy",
-  social: "Praktyka taneczna — sociale i praktisy",
+  social: "Praktyka taneczna: sociale i praktisy",
   competition: "Zawody",
 };
 

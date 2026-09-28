@@ -68,7 +68,7 @@ export function HomeJourney() {
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">W pięciu krokach</p>
           <h2 id="journey-title" className="mt-1 font-heading text-2xl font-bold text-white sm:text-3xl">Wszystko, czego potrzebujesz</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Od znalezienia pierwszych zajęć po analizę postępów — każda funkcja pomaga Ci częściej i wygodniej tańczyć.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Od znalezienia pierwszych zajęć po analizę postępów: każda funkcja pomaga Ci częściej i wygodniej tańczyć.</p>
         </div>
 
         <div className="relative">
@@ -105,7 +105,7 @@ export function HomeJourney() {
       <section className="flex flex-col items-center justify-between gap-4 rounded-3xl border border-accent/25 bg-[linear-gradient(135deg,rgba(255,106,24,.13),rgba(156,77,255,.08))] px-5 py-6 text-center sm:flex-row sm:px-8 sm:text-left">
         <div>
           <p className="font-heading text-xl font-bold text-white sm:text-2xl">Zaplanuj swój pierwszy taniec</p>
-          <p className="mt-1 text-sm text-muted">Zajęcia, wydarzenia i nauka — zawsze pod ręką.</p>
+          <p className="mt-1 text-sm text-muted">Zajęcia, wydarzenia i nauka, zawsze pod ręką.</p>
         </div>
         <Link href="/rejestracja" className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-accent px-7 text-sm font-semibold text-white transition hover:bg-accent-dark sm:w-auto">Zacznij teraz →</Link>
       </section>

@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { getInstructors, getPublicCommunityMembers } from "@/lib/db";
 import { InstructorsExplorer } from "@/components/InstructorsExplorer";
 import { TabNav } from "@/components/TabNav";
 import { Header } from "@/components/Header";
 import { CommunityMembers } from "@/components/CommunityMembers";
+
+
+export const metadata: Metadata = {
+  title: "Instruktorzy bachaty w Warszawie",
+  description: "Instruktorzy bachaty uczący w warszawskich szkołach tańca, z ich aktualnymi zajęciami.",
+};
 
 export const dynamic = "force-dynamic";
 

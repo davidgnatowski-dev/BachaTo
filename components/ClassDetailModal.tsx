@@ -13,6 +13,7 @@ import { useActivity } from "@/lib/activity";
 import { ExternalLinkIcon, CheckIcon, ChevronDownIcon, HeartIcon, SchoolIcon } from "@/components/icons";
 import { PlusButton } from "@/components/PlusButton";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
+import { ShareButton } from "@/components/ShareButton";
 import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 const MONTH_ABBR = ["STY", "LUT", "MAR", "KWI", "MAJ", "CZE", "LIP", "SIE", "WRZ", "PAŹ", "LIS", "GRU"];
@@ -179,6 +180,11 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
               <ExternalLinkIcon className="h-4 w-4" />
               Zapisy
             </a>
+            <ShareButton
+              title={row.title}
+              text={[row.title, row.startTime ? `${row.startTime}${row.endTime ? `–${row.endTime}` : ""}` : null, row.school].filter(Boolean).join(" · ")}
+              path={`/grafik?school=${encodeURIComponent(row.school)}&q=${encodeURIComponent(row.title)}`}
+            />
           </div>
 
           {/* Attendance */}
@@ -210,7 +216,7 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
                     href={`/instruktorzy/${encodeURIComponent(name)}`}
                     className="flex items-center gap-3 rounded-lg py-1.5 transition-colors hover:bg-black/20"
                   >
-                    <InstructorAvatar name={name} photoUrl={photo} sizeClassName="h-10 w-10" />
+                    <InstructorAvatar name={name} photoUrl={photo} sizeClassName="h-10 w-10" linked={false} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-zinc-50">{name}</p>
                       <p className="truncate text-xs text-muted">

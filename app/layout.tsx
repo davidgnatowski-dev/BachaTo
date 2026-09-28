@@ -18,8 +18,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Grafik bachaty — Warszawa",
-  description: "Grafik zajęć bachaty w warszawskich szkołach tańca, aktualizowany automatycznie.",
+  // Absolute base for Open Graph/Twitter image and canonical URLs (the stable production alias).
+  metadataBase: new URL("https://bacha-to.vercel.app"),
+  title: { default: "BachaTo – grafik bachaty w Warszawie", template: "%s – BachaTo" },
+  description: "Grafik zajęć bachaty w warszawskich szkołach tańca, wydarzenia i Twój plan tańca w jednym miejscu.",
+  openGraph: { siteName: "BachaTo", locale: "pl_PL", type: "website" },
 };
 
 const EMPTY_STATS = { classCount: 0, schoolCount: 0, eventCount: 0, cityCount: 0 };

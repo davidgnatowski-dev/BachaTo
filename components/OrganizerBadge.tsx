@@ -15,7 +15,7 @@ const ORGANIZER_BADGES: OrganizerBadgeDef[] = [
   {
     match: (row) => Boolean(row.competitionSeries?.includes("Bachata Social World Cup")),
     src: "/badges/bswc-logo.png",
-    label: "Bachata Social World Cup — eliminacje/finał",
+    label: "Bachata Social World Cup: eliminacje/finał",
   },
   {
     // Covers both brandings the same real organiser uses ("World Bachata Meet Up" on

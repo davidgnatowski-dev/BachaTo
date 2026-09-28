@@ -19,7 +19,7 @@ export function PricingCard({ school }: { school: School }) {
       </p>
       <p className="text-sm text-zinc-300">{pricing.note}</p>
 
-      <p className="text-xs text-muted">Sprawdzone {formatCheckedOn(pricing.checkedOn)} — ceny i oferty mogą się zmieniać.</p>
+      <p className="text-xs text-muted">Sprawdzone {formatCheckedOn(pricing.checkedOn)}, ceny i oferty mogą się zmieniać.</p>
 
       <a
         href={pricing.pricingUrl}

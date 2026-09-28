@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ClassFormat, ClassRow, School } from "@/lib/types";
 import { hasUserPreferences, matchesUserPreferences, type UserPreferences } from "@/lib/preferences";
@@ -61,8 +61,14 @@ function nextDateForWeekday(weekday: number, today: Date): Date {
   return d;
 }
 
+/** "Dziś wieczorem" = today, starting from this hour — the most common "where can I dance tonight?" question. */
+const TONIGHT_FROM = "17:00";
+/** The level filter is remembered per browser, so a P1 dancer doesn't re-pick it on every visit. */
+const LEVEL_STORAGE_KEY = "bachato-grafik-level";
+
 const QUICK_RANGES = [
   { key: "today", label: "Dzisiaj" },
+  { key: "tonight", label: "Dziś wieczorem" },
   { key: "tomorrow", label: "Jutro" },
   { key: "weekend", label: "Weekend" },
   { key: "week", label: "7 dni" },
@@ -121,6 +127,36 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
     router.push(nextParams ? `${pathname}?${nextParams}` : pathname, { scroll: false });
   }
 
+  // Restore the remembered level once, only when the URL doesn't already pick one (a shared
+  // link or "Wyczyść wszystko" must win over the stored choice).
+  const restoredLevel = useRef(false);
+  useEffect(() => {
+    if (restoredLevel.current) return;
+    restoredLevel.current = true;
+    if (searchParams.get("level") !== null) return;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(LEVEL_STORAGE_KEY);
+    } catch {
+      return;
+    }
+    if (saved && (LEVEL_BUCKET_ORDER as readonly string[]).includes(saved)) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("level", saved);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [pathname, router, searchParams]);
+
+  function selectLevel(value: string) {
+    try {
+      if (value === ALL) localStorage.removeItem(LEVEL_STORAGE_KEY);
+      else localStorage.setItem(LEVEL_STORAGE_KEY, value);
+    } catch {
+      // Private mode: the filter still works, it just isn't remembered.
+    }
+    updateParam("level", value);
+  }
+
   const schools = SCHOOL_NAMES;
 
   const instructors = useMemo(
@@ -157,13 +193,14 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
       if (instructor !== ALL && !splitInstructors(r.instructor).includes(instructor)) return false;
       if (level !== ALL && classifyLevel(r.level) !== (level as LevelBucket)) return false;
       if (format !== ALL && r.format !== (format as ClassFormat)) return false;
+      if (dayFilter === "tonight" && (!r.startTime || r.startTime < TONIGHT_FROM)) return false;
       if (timeFrom && (!r.startTime || r.startTime < timeFrom)) return false;
       if (timeTo && (!r.startTime || r.startTime > timeTo)) return false;
       if (q && !`${r.title} ${r.instructor ?? ""} ${r.school}`.toLowerCase().includes(q)) return false;
       if (preferenceOnly && preferences && !matchesUserPreferences(r, preferences)) return false;
       return true;
     });
-  }, [rows, school, instructor, level, format, activeDates, timeFrom, timeTo, query, preferenceOnly, preferences]);
+  }, [rows, school, instructor, level, format, dayFilter, activeDates, timeFrom, timeTo, query, preferenceOnly, preferences]);
 
   const filtered = useMemo(() => filteredOccurrences.map(({ row }) => row), [filteredOccurrences]);
 
@@ -213,6 +250,11 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
   }, [showMore, hasActiveFilters]);
 
   function resetFilters() {
+    try {
+      localStorage.removeItem(LEVEL_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setTimeFrom("");
     setTimeTo("");
     setShowMore(false);
@@ -396,7 +438,7 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
 
       {query && (
         <p className="text-xs text-muted">
-          Wyniki wyszukiwania dla <span className="font-semibold text-zinc-200">&quot;{query}&quot;</span> —{" "}
+          Wyniki wyszukiwania dla <span className="font-semibold text-zinc-200">&quot;{query}&quot;</span> ·{" "}
           <button onClick={() => updateParam("q", "")} className="text-accent hover:text-accent-peach">
             wyczyść
           </button>
@@ -427,7 +469,7 @@ export function ScheduleExplorer({ rows, preferences }: { rows: ClassRow[]; pref
                 <button
                   key={b}
                   type="button"
-                  onClick={() => updateParam("level", active ? ALL : b)}
+                  onClick={() => selectLevel(active ? ALL : b)}
                   className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity hover:opacity-80 ${colors.bg} ${colors.text} ${
                     active ? `${colors.ring} ring-2` : colors.ring
                   }`}

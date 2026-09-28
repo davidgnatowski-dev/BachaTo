@@ -601,8 +601,8 @@ function PlanDayGroup({ date, items, now, defaultOpen, onRemoveClass, onRemoveEv
 function SharePlanButton({ items, label }: { items: PlanItem[]; label: string }) {
   const [copied, setCopied] = useState(false);
   async function share() {
-    const lines = items.map((item) => `${item.when.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "short" })} ${item.when.toTimeString().slice(0, 5)} — ${item.title}${item.school ? ` (${item.school})` : ""}`);
-    const text = `Mój plan Bachato — ${label}\n${lines.length ? lines.join("\n") : "Brak zajęć w tym okresie."}`;
+    const lines = items.map((item) => `${item.when.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "short" })} ${item.when.toTimeString().slice(0, 5)} · ${item.title}${item.school ? ` (${item.school})` : ""}`);
+    const text = `Mój plan BachaTo – ${label}\n${lines.length ? lines.join("\n") : "Brak zajęć w tym okresie."}`;
     try {
       if (navigator.share) await navigator.share({ title: "Mój plan Bachato", text });
       else await navigator.clipboard.writeText(text);

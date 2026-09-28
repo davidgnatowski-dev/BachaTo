@@ -34,7 +34,7 @@ export default function RequestPasswordResetPage() {
 
         {state?.devResetUrl && (
           <div className="rounded-lg border border-dashed border-accent/50 bg-accent/10 p-3 text-xs text-zinc-200">
-            <p className="font-semibold text-accent">Tryb deweloperski — bez skonfigurowanej wysyłki e-mail</p>
+            <p className="font-semibold text-accent">Tryb deweloperski: bez skonfigurowanej wysyłki e-mail</p>
             <p className="mt-1">W produkcji ten link trafiłby na e-mail. Teraz otwórz go bezpośrednio:</p>
             <Link href={state.devResetUrl} className="mt-1 block break-all text-accent hover:text-accent-peach">
               {state.devResetUrl}

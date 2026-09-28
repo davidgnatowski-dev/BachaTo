@@ -107,7 +107,7 @@ export function ActivityList({ initialEntries }: { initialEntries?: ActivityEntr
                 ))}
               </div>
               </div>
-              {entry.autoMarked && <p className="text-xs text-accent">Dodane automatycznie z Twojego planu — czeka na potwierdzenie.</p>}
+              {entry.autoMarked && <p className="text-xs text-accent">Dodane automatycznie z Twojego planu, czeka na potwierdzenie.</p>}
               <ReflectionEditor entry={entry} onSave={updateReflection} />
             </div>
           );

@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { SpotifyPlaylists } from "@/components/SpotifyPlaylists";
 
 export const metadata: Metadata = {
-  title: "Muzyka do bachaty — BachaTo",
+  title: "Muzyka do bachaty",
   description: "Playlisty Spotify do nauki, ćwiczeń i tańczenia bachaty.",
 };
 

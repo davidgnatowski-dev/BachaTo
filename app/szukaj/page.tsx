@@ -41,7 +41,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
       {!q ? (
         <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">
-          Wpisz czego szukasz — zajęć, szkoły, instruktora albo wydarzenia.
+          Wpisz, czego szukasz: zajęć, szkoły, instruktora albo wydarzenia.
         </p>
       ) : totalMatches === 0 ? (
         <p className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">

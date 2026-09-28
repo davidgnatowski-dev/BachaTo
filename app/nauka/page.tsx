@@ -27,7 +27,7 @@ const videos = [
 ] as const;
 
 export const metadata: Metadata = {
-  title: "Nauka bachaty — BachaTo",
+  title: "Nauka bachaty",
   description: "Filmy i materiały do samodzielnej nauki bachaty.",
 };
 

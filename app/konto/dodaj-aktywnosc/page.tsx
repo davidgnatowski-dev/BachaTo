@@ -27,7 +27,7 @@ export default async function AddActivityPage() {
           <header>
             <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Dodaj aktywność do dziennika</h1>
             <p className="mt-1 text-sm text-muted">
-              Zajęcia, praktyka, impreza albo warsztat — także spoza katalogu i z przeszłości. Wpis liczy się do Twoich
+              Zajęcia, praktyka, impreza albo warsztat, także spoza katalogu i z przeszłości. Wpis liczy się do Twoich
               statystyk i passy.
             </p>
           </header>

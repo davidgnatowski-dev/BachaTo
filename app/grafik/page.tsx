@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { getCurrentSchedule } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ScheduleExplorer } from "@/components/ScheduleExplorer";
 import { DataFreshnessBanner } from "@/components/DataFreshnessBanner";
 import { Header } from "@/components/Header";
 import { SCHOOL_NAMES } from "@/lib/schools";
+
+
+export const metadata: Metadata = {
+  title: "Grafik zajęć bachaty w Warszawie",
+  description: "Aktualny grafik zajęć bachaty w warszawskich szkołach tańca. Filtruj po dniu, godzinie, poziomie i szkole, a potem dodaj zajęcia do swojego planu.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +25,7 @@ export default async function GrafikPage({ searchParams }: { searchParams: Promi
 
       <header>
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Grafik bachaty — Warszawa</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Grafik bachaty – Warszawa</h1>
           <p className="mt-1 text-sm text-muted">Wybierz zajęcia i dodaj je bezpośrednio do swojego kalendarza.</p>
         </div>
       </header>
@@ -28,7 +35,7 @@ export default async function GrafikPage({ searchParams }: { searchParams: Promi
           <p className="font-semibold">Preferencje zapisane 🎉</p>
           <p className="mt-1 text-emerald-200/90">
             {mine === "1"
-              ? "Poniżej zajęcia dopasowane do poziomu, formatu i dni, które wybrałeś/aś. Dodaj je do planu — resztę filtrów możesz zmienić w każdej chwili."
+              ? "Poniżej zajęcia dopasowane do poziomu, formatu i dni, które wybrałeś/aś. Dodaj je do planu, a resztę filtrów możesz zmienić w każdej chwili."
               : "Przeglądaj cały grafik i dodawaj zajęcia do swojego planu. Preferencje możesz ustawić w profilu."}
           </p>
         </div>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -6,6 +7,7 @@ import { CATEGORY_LABELS, categoryStyle, eventProgramFavoriteId, formatEventDate
 import { toLocalIsoDate } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { AddEventToCalendarButton } from "@/components/AddEventToCalendarButton";
+import { ShareButton } from "@/components/ShareButton";
 import { EventAttendanceButton } from "@/components/EventAttendanceButton";
 import { EventPlanControls } from "@/components/EventPlanControls";
 import { EventStructuredDetails } from "@/components/EventStructuredDetails";
@@ -20,6 +22,25 @@ export const dynamic = "force-dynamic";
 function competitionRoleCount(count: number | undefined, role: "Leader" | "Follower"): string {
   const value = count ?? 0;
   return `${value} ${value === 1 ? role : `${role}ów`}`;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ source: string; id: string }> }): Promise<Metadata> {
+  const { source: encodedSource, id: rawId } = await params;
+  let source = encodedSource;
+  try {
+    source = decodeURIComponent(encodedSource);
+  } catch {
+    return {};
+  }
+  const event = getEventBySourceAndId(source, Number(rawId));
+  if (!event) return {};
+  const description = [formatEventDateRange(event), event.city, event.organizer].filter(Boolean).join(" · ");
+  const image = event.coverImage?.startsWith("http") ? [event.coverImage] : undefined;
+  return {
+    title: event.title,
+    description,
+    openGraph: { title: event.title, description, type: "article", images: image },
+  };
 }
 
 export default async function EventDetailPage({ params }: { params: Promise<{ source: string; id: string }> }) {
@@ -134,6 +155,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
               <div className="mt-4 flex flex-wrap gap-2">
                 <EventPlanControls row={event} />
                 <AddEventToCalendarButton row={event} />
+                <ShareButton title={event.title} text={`${event.title} · ${formatEventDateRange(event)}${event.city ? ` · ${event.city}` : ""}`} path={`/eventy/${encodeURIComponent(event.source)}/${event.id}`} />
               </div>
             </div>
 
@@ -157,7 +179,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ so
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300">Jak wystartować</p>
           <h2 className="mt-1 font-heading text-2xl font-semibold text-zinc-50">Wybierz konkretną eliminację</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-300">
-            Podany wyżej zakres dat obejmuje cały cykl. Rejestracja odbywa się osobno na każdą eliminację — użyj przycisku „Oryginalna strona” na wybranej karcie.
+            Podany wyżej zakres dat obejmuje cały cykl. Rejestracja odbywa się osobno na każdą eliminację, użyj przycisku „Oryginalna strona” na wybranej karcie.
           </p>
           <details className="group mt-5" open={competitionChildren.length <= 6}>
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-sky-300 select-none [&::-webkit-details-marker]:hidden">

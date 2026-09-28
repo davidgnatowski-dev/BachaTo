@@ -38,8 +38,8 @@ export function DataFreshnessBanner({
       <span aria-hidden="true">{stale ? "⚠️" : "🟢"}</span>
       <span>
         {stale
-          ? `Dane mogą być nieaktualne — ostatni import ${relative}. Godziny i miejsca sprawdź u źródła.`
-          : `${label} — ostatnia aktualizacja ${relative}.`}
+          ? `Dane mogą być nieaktualne: ostatni import ${relative}. Godziny i miejsca sprawdź u źródła.`
+          : `${label}: ostatnia aktualizacja ${relative}.`}
       </span>
     </div>
   );

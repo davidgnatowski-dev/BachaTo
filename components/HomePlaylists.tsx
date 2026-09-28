@@ -13,7 +13,7 @@ export function HomePlaylists() {
         <Link href="/muzyka" className="text-sm font-semibold text-violet hover:text-white">Wszystkie playlisty →</Link>
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        {PLAYLISTS.map((playlist) => <article key={playlist.id} className="rounded-2xl border border-line bg-black/25 p-3"><div className="mb-3 px-1"><h3 className="font-heading font-semibold text-zinc-100">{playlist.title}</h3><p className="mt-1 text-xs text-muted">{playlist.description}</p></div><iframe title={`Spotify — ${playlist.title}`} src={`https://open.spotify.com/embed/playlist/${playlist.id}?utm_source=generator&theme=0`} width="100%" height="152" loading="lazy" referrerPolicy="origin-when-cross-origin" className="rounded-xl border-0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" /></article>)}
+        {PLAYLISTS.map((playlist) => <article key={playlist.id} className="rounded-2xl border border-line bg-black/25 p-3"><div className="mb-3 px-1"><h3 className="font-heading font-semibold text-zinc-100">{playlist.title}</h3><p className="mt-1 text-xs text-muted">{playlist.description}</p></div><iframe title={`Spotify – ${playlist.title}`} src={`https://open.spotify.com/embed/playlist/${playlist.id}?utm_source=generator&theme=0`} width="100%" height="152" loading="lazy" referrerPolicy="origin-when-cross-origin" className="rounded-xl border-0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" /></article>)}
       </div>
     </section>
   );
