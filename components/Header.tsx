@@ -63,7 +63,7 @@ export function Header() {
   if (insideDashboardShell) return null;
 
   return (
-    <header className="relative flex items-center justify-between gap-4 py-1">
+    <header className="relative z-40 flex items-center justify-between gap-4 py-1">
       <Link href="/" className="shrink-0">
         <Image src="/brand/logo-v4.png" alt="BachaTo" width={1254} height={1254} priority className="h-16 w-auto" />
       </Link>
@@ -125,7 +125,7 @@ export function Header() {
               </span>
               <ChevronDownIcon className="h-3.5 w-3.5 text-muted transition-transform group-open:rotate-180" />
             </summary>
-            <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-zinc-950 p-2 shadow-2xl">
+            <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-zinc-950 p-2 shadow-2xl">
               <p className="truncate px-3 py-2 text-xs font-semibold text-zinc-100">{session.name}</p>
               <div className="mb-1 border-t border-line" />
               <UserMenuLinks />

@@ -7,7 +7,7 @@ import { SearchAutocomplete } from "@/components/SearchAutocomplete";
 
 export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string; avatarEmoji: string | null; avatarUrl: string | null }) {
   return (
-    <header className="flex min-h-16 items-center gap-3 border-b border-line/80 bg-background/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
+    <header className="relative z-40 flex min-h-16 items-center gap-3 border-b border-line/80 bg-background/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
       <Link href="/" className="shrink-0" aria-label="BachaTo, strona główna">
         <Image src="/brand/logo-v4.png" alt="BachaTo" width={1254} height={1254} priority className="h-14 w-auto" />
       </Link>
@@ -40,7 +40,7 @@ export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string
             <span className="hidden max-w-28 truncate font-medium sm:block">{name}</span>
             <ChevronDownIcon className="hidden h-3.5 w-3.5 text-muted transition-transform group-open:rotate-180 sm:block" />
           </summary>
-          <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-zinc-950 p-2 shadow-2xl">
+          <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-zinc-950 p-2 shadow-2xl">
             <Link href="/" className="block rounded-lg px-3 py-2 text-sm font-semibold text-accent hover:bg-zinc-900">Mój panel</Link>
             <Link href="/#moj-plan" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Mój plan</Link>
             <Link href="/grafik" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Znajdź zajęcia</Link>
