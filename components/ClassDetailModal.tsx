@@ -10,10 +10,9 @@ import { SCHOOL_INFO } from "@/lib/schools";
 import { recentClassOccurrence } from "@/lib/calendar";
 import { useFavorites } from "@/lib/favorites";
 import { useActivity } from "@/lib/activity";
-import { ExternalLinkIcon, CheckIcon, ChevronDownIcon, HeartIcon, SchoolIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, HeartIcon, SchoolIcon } from "@/components/icons";
 import { PlusButton } from "@/components/PlusButton";
 import { AddToCalendarButton } from "@/components/AddToCalendarButton";
-import { ShareButton } from "@/components/ShareButton";
 import { InstructorAvatar } from "@/components/InstructorAvatar";
 
 const MONTH_ABBR = ["STY", "LUT", "MAR", "KWI", "MAJ", "CZE", "LIP", "SIE", "WRZ", "PAŹ", "LIS", "GRU"];
@@ -171,20 +170,6 @@ export function ClassDetailModal({ row, allRows, onClose }: { row: ClassRow; all
               <HeartIcon className="h-4 w-4" filled={liked} />
               Ulubione
             </button>
-            <a
-              href={row.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-full border border-line bg-black/30 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-violet/50 hover:text-violet"
-            >
-              <ExternalLinkIcon className="h-4 w-4" />
-              Zapisy
-            </a>
-            <ShareButton
-              title={row.title}
-              text={[row.title, row.startTime ? `${row.startTime}${row.endTime ? `–${row.endTime}` : ""}` : null, row.school].filter(Boolean).join(" · ")}
-              path={`/grafik?school=${encodeURIComponent(row.school)}&q=${encodeURIComponent(row.title)}`}
-            />
           </div>
 
           {/* Attendance */}
