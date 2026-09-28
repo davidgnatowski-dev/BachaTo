@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { launchBrowser } from "./browser";
 import type { ScrapedClass } from "../types";
 import { classifyFormatFromText } from "../format";
 import { splitInstructors } from "../schedule";
@@ -49,7 +49,7 @@ function membersFor(event: FitsseyEvent): FitsseyMember[] {
 }
 
 export async function scrapeVivaCuba(): Promise<ScrapedClass[]> {
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   const results: ScrapedClass[] = [];
   const seen = new Set<string>();
 

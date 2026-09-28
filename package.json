@@ -10,10 +10,11 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "scrape": "tsx scripts/scrape.ts",
     "school-images": "tsx scripts/fetchSchoolImages.ts",
-    "postinstall": "playwright install chromium",
+    "postinstall": "[ -n \"$VERCEL\" ] || playwright install chromium",
     "vercel-build": "(npm run scrape || true) && next build"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "@supabase/supabase-js": "^2.116.0",
     "better-sqlite3": "^13.0.3",
     "cheerio": "^1.2.0",

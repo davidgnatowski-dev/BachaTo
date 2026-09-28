@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { launchBrowser } from "./browser";
 import * as cheerio from "cheerio";
 import type { ScrapedClass } from "../types";
 import { classifyFormatFromText } from "../format";
@@ -239,7 +239,7 @@ export async function scrapeSalsaLibre(): Promise<ScrapedClass[]> {
     fetchSalsaLibreInstructorProfiles(),
     fetchHoliDanceSchedule(),
   ]);
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   const results: ScrapedClass[] = [];
   const seen = new Set<string>();
 
