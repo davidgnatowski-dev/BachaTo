@@ -5,6 +5,14 @@ import { pluralizeClasses } from "@/lib/schedule";
 import { pluralizeEvents } from "@/lib/events";
 import { useState } from "react";
 
+function pluralizeDanceParties(n: number): string {
+  if (n === 1) return "impreza taneczna";
+  const lastDigit = n % 10;
+  const lastTwo = n % 100;
+  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "imprezy taneczne";
+  return "imprez tanecznych";
+}
+
 interface YearSummaryProps {
   year: number;
   classes: number;
@@ -54,7 +62,7 @@ function createStoryImage({ year, classes, hours, events, practice, school, inst
     { value: String(classes), label: pluralizeClasses(classes).toUpperCase() },
     { value: `${formatDecimal(hours)} h`, label: "TAŃCA" },
     { value: String(events), label: pluralizeEvents(events).toUpperCase() },
-    { value: String(practice), label: "PRAKTYK TANECZNYCH" },
+    { value: String(practice), label: pluralizeDanceParties(practice).toUpperCase() },
   ];
   stats.forEach((stat, index) => {
     const x = index % 2 === 0 ? 86 : 555;
@@ -121,7 +129,7 @@ export function YearSummaryCard(props: YearSummaryProps) {
     { value: classes, label: pluralizeClasses(classes) },
     { value: `${formatDecimal(hours)} h`, label: "tańca" },
     { value: events, label: pluralizeEvents(events) },
-    { value: practice, label: "praktyk tanecznych" },
+    { value: practice, label: pluralizeDanceParties(practice) },
     { value: school || "—", label: "najczęstsza szkoła" },
     { value: instructor || style || "—", label: instructor ? "najczęstszy instruktor" : "ulubiony styl" },
   ];
