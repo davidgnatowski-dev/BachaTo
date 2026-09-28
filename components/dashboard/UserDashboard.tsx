@@ -180,6 +180,30 @@ function levelMatches(classLevel: string | null | undefined, preferred: string |
   return row.includes(target);
 }
 
+const RECOMMENDATION_LIMIT = 6;
+
+/**
+ * Take the best-ranked items but at most one per start hour on a given day
+ * first, so five equally good 17:00 classes don't crowd out 19:00 and 20:00;
+ * only then top up with the remaining best ones.
+ */
+function spreadAcrossHours<T extends { row: ClassRow; when: Date }>(ranked: T[], limit = RECOMMENDATION_LIMIT): T[] {
+  const picked: T[] = [];
+  const usedSlots = new Set<string>();
+  for (const item of ranked) {
+    const slot = `${toLocalIsoDate(item.when)}-${item.when.getHours()}`;
+    if (usedSlots.has(slot)) continue;
+    usedSlots.add(slot);
+    picked.push(item);
+    if (picked.length === limit) break;
+  }
+  for (const item of ranked) {
+    if (picked.length === limit) break;
+    if (!picked.includes(item)) picked.push(item);
+  }
+  return picked.sort((a, b) => a.when.getTime() - b.when.getTime());
+}
+
 function recommendationScore(row: ClassRow, preferences: UserPreferences) {
   let score = 0;
   const reasons: string[] = [];
@@ -322,20 +346,19 @@ export function UserDashboard({
     );
     const nearTerm = all.filter(({ when }) => when < addDays(now, 3));
     const base = nearTerm.length >= 4 ? nearTerm : all;
-    if (recommendationFilter === "all") return all.slice(0, 5).map((item) => ({ ...item, matchReason: null }));
+    if (recommendationFilter === "all") return spreadAcrossHours(base).map((item) => ({ ...item, matchReason: null }));
     if (recommendationFilter === "level") {
       const preferredLevel = preferences.levels[0] ?? preferences.level ?? computeActivityStats(confirmedActivityOnly(activity.entries)).favoriteLevel;
       const matched = preferredLevel ? base.filter(({ row }) => levelMatches(row.level, preferredLevel)) : [];
-      return (matched.length ? matched : base).slice(0, 5).map((item) => ({
+      return spreadAcrossHours(matched.length ? matched : base).map((item) => ({
         ...item,
         matchReason: preferredLevel && levelMatches(item.row.level, preferredLevel) ? `Poziom: ${preferredLevel}` : null,
       }));
     }
-    return base
+    const ranked = base
       .map((item) => ({ ...item, ...recommendationScore(item.row, preferences) }))
-      .sort((a, b) => b.score - a.score || a.when.getTime() - b.when.getTime())
-      .slice(0, 5)
-      .map(({ reason, row, when }) => ({ row, when, matchReason: reason }));
+      .sort((a, b) => b.score - a.score || a.when.getTime() - b.when.getTime());
+    return spreadAcrossHours(ranked).map(({ reason, row, when }) => ({ row, when, matchReason: reason }));
   }, [activity.entries, favorites.plannedClassIds, now, preferences, recommendationFilter, schedule]);
 
   const favoriteClasses = useMemo(
