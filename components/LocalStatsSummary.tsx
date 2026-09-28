@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDecimal } from "@/lib/format";
 import Link from "next/link";
 import { useActivity } from "@/lib/activity";
 import { useFavorites } from "@/lib/favorites";
@@ -29,13 +30,13 @@ export function LocalStatsSummary() {
       />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Godziny tańca", value: stats.totalHours },
+          { label: "Godziny tańca", value: formatDecimal(stats.totalHours) },
           { label: "Odbyte zajęcia", value: stats.totalClasses },
           { label: "Ten miesiąc", value: stats.thisMonthCount },
           { label: "Ten tydzień", value: stats.thisWeekCount },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-line bg-zinc-900/60 p-4 text-center">
-            <p className="font-heading text-2xl font-bold text-accent">{stat.value}</p>
+            <p className="font-heading text-2xl font-bold text-zinc-50">{stat.value}</p>
             <p className="mt-1 text-xs text-muted">{stat.label}</p>
           </div>
         ))}
@@ -46,7 +47,7 @@ export function LocalStatsSummary() {
           {stats.favoriteInstructor && (
             <Link
               href={`/instruktorzy/${encodeURIComponent(stats.favoriteInstructor)}`}
-              className="rounded-full border border-violet/40 bg-violet/10 px-3 py-1.5 text-xs font-semibold text-violet hover:bg-violet/20"
+              className="rounded-full border border-line bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-zinc-500"
             >
               Ulubiony instruktor: {stats.favoriteInstructor}
             </Link>
@@ -90,7 +91,7 @@ export function LocalStatsSummary() {
       </section>
 
       <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
-        BachaTo Wrapped — Twoje roczne podsumowanie do udostępnienia na Instagram Stories — jest w planach. Wróć tu,
+        BachaTo Wrapped, czyli Twoje roczne podsumowanie do udostępnienia na Instagram Stories, jest w planach. Wróć tu,
         gdy będzie gotowe.
       </p>
     </div>

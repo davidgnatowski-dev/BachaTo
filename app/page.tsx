@@ -3,7 +3,6 @@ import {
   getUpcomingEvents,
   getUserActivity,
   getUserClasses,
-  getUserEventActivity,
   getUserFavorites,
   getUserPreferences,
 } from "@/lib/db";
@@ -27,12 +26,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const user = await getCurrentUser();
 
   if (user && preview !== "landing") {
-    const [preferences, favorites, activity, customClasses, eventActivity] = await Promise.all([
+    const [preferences, favorites, activity, customClasses] = await Promise.all([
       getUserPreferences(user.id),
       getUserFavorites(user.id),
       getUserActivity(user.id),
       getUserClasses(user.id),
-      getUserEventActivity(user.id),
     ]);
     const dashboardPreferences = {
       ...user.preferences,
@@ -70,7 +68,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           customClasses={customClasses}
           initialFavorites={initialFavorites}
           initialActivity={initialActivity}
-          attendedEvents={eventActivity.length}
           preferences={dashboardPreferences}
         />
       </div>

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { pluralizeClasses } from "@/lib/schedule";
 import { pluralizeEvents } from "@/lib/events";
 
@@ -58,6 +59,7 @@ export function Footer({
             </div>
           ))}
         </div>
+        <ThemeToggle />
       </div>
     </footer>
   );

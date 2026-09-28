@@ -91,3 +91,8 @@ export function classifyFormatFromText(
   if (instructorCount != null && instructorCount >= 2) return "partner";
   return fallback;
 }
+
+/** Polish number formatting — decimal comma, at most one decimal place ("36,5", "12"). */
+export function formatDecimal(n: number): string {
+  return n.toLocaleString("pl-PL", { maximumFractionDigits: 1 });
+}

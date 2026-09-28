@@ -8,10 +8,9 @@ import type { ActivityEntry } from "@/lib/activity";
 import type { FavoritesSnapshot } from "@/lib/favorites";
 import { attendanceKey, useActivity } from "@/lib/activity";
 import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats";
-import { DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
-import { eventHref, eventProgramFavoriteId, pluralizeEvents, pluralizeSchools } from "@/lib/events";
+import { eventHref, eventProgramFavoriteId } from "@/lib/events";
 import { toLocalIsoDate } from "@/lib/format";
-import { displayDayOfWeek, formatDuration, nextOccurrences, pluralizeClasses, pluralizeWeeks, schoolTextClass, splitInstructors } from "@/lib/schedule";
+import { displayDayOfWeek, formatDuration, nextOccurrences, pluralizeClasses, schoolTextClass, splitInstructors } from "@/lib/schedule";
 import { classifyLevel, levelStyle, levelShortCode } from "@/lib/level";
 import { useFavorites } from "@/lib/favorites";
 import { ClassDetailModal } from "@/components/ClassDetailModal";
@@ -200,7 +199,6 @@ export function UserDashboard({
   customClasses,
   initialFavorites,
   initialActivity,
-  attendedEvents,
   preferences,
 }: {
   schedule: ClassRow[];
@@ -208,7 +206,6 @@ export function UserDashboard({
   customClasses: DashboardUserClass[];
   initialFavorites: FavoritesSnapshot;
   initialActivity: ActivityEntry[];
-  attendedEvents: number;
   preferences: UserPreferences;
 }) {
   // null until the user picks a tab — then we default to "week", or to "next" when nothing is left this week (e.g. on a Sunday evening).
@@ -377,16 +374,10 @@ export function UserDashboard({
   const selectedPlan = visiblePlanItems.filter((item) => item.kind !== "event");
   const selectedMinutes = selectedPlan.reduce((sum, item) => sum + durationMinutes(item.when.toTimeString().slice(0, 5), item.endTime), 0);
   const selectedHours = Math.round((selectedMinutes / 60) * 10) / 10;
-  const selectedSchools = new Set(selectedPlan.map((item) => item.school).filter(Boolean));
-  const selectedInstructors = new Set(selectedPlan.flatMap((item) => splitInstructors(item.instructor ?? undefined)));
   const selectedPeriod = planPeriod(planFilter, now);
   // Provisional auto-marked attendances are excluded from every number until confirmed.
   const confirmedEntries = confirmedActivityOnly(activity.entries);
-  const stats = computeActivityStats(confirmedEntries);
-  const schoolsDanced = new Set(confirmedEntries.map((entry) => entry.school));
-  const instructorsDanced = new Set(confirmedEntries.flatMap((entry) => splitInstructors(entry.instructor)));
   const streak = currentStreak(confirmedEntries);
-  const goalDone = stats.thisWeekCount;
 
   return (
     <div className="flex min-h-[calc(100vh-65px)]">
@@ -433,28 +424,6 @@ export function UserDashboard({
             {/* Passive progress/tracking widgets — a compact stats strip, kept separate from the
                 browse-for-later sections (favorites, recommendations) further down the page. */}
             <aside className="flex min-w-0 flex-col gap-4">
-              <WeeklySummaryCard
-                eyebrow={selectedPeriod.eyebrow}
-                title={selectedPeriod.title}
-                range={selectedPeriod.range}
-                hours={selectedHours}
-                classes={selectedPlan.length}
-                schools={selectedSchools.size}
-                instructors={selectedInstructors.size}
-                streak={streak}
-              />
-              <section className="rounded-2xl border border-line bg-zinc-900/45 p-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet">Cel tygodnia</p>
-                  <p className="text-xs text-muted">{goalDone} / {DEFAULT_WEEKLY_GOAL}</p>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800">
-                  <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, Math.round((goalDone / DEFAULT_WEEKLY_GOAL) * 100))}%` }} />
-                </div>
-                <p className="mt-2 text-[11px] text-muted">
-                  {goalDone >= DEFAULT_WEEKLY_GOAL ? "Cel osiągnięty 🎉" : `Jeszcze ${DEFAULT_WEEKLY_GOAL - goalDone} do celu tygodnia.`}
-                </p>
-              </section>
               <MiniCalendar items={allPlanItems} onOpenClass={setSelectedClass} />
             </aside>
           </div>
@@ -478,15 +447,13 @@ export function UserDashboard({
             onOpenClass={setSelectedClass}
           />
 
-          <DashboardStatsSection
-            totalClasses={stats.totalClasses}
-            totalHours={stats.totalHours}
-            schools={schoolsDanced.size}
-            instructors={instructorsDanced.size}
-            streak={streak}
-            monthCount={stats.thisMonthCount}
-            attendedEvents={attendedEvents}
-          />
+          <Link href="/podsumowanie" className="flex items-center justify-between gap-3 rounded-2xl border border-violet/30 bg-violet/[0.07] px-5 py-4 transition hover:border-violet/60 hover:bg-violet/10">
+            <span>
+              <span className="block font-heading text-base font-semibold text-zinc-50">Zobacz swoje statystyki</span>
+              <span className="mt-0.5 block text-xs text-muted">Godziny na parkiecie, cel tygodnia, passa i odwiedzone szkoły</span>
+            </span>
+            <span className="text-lg text-violet" aria-hidden>→</span>
+          </Link>
         </div>
       </main>
       {selectedClass && <ClassDetailModal row={selectedClass} allRows={schedule} onClose={() => setSelectedClass(null)} />}
@@ -531,7 +498,7 @@ function MyPlanSection({
 
   return (
     <section id="moj-plan" className="scroll-mt-4 overflow-hidden rounded-2xl border border-line bg-zinc-900/45 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-      <div className="flex flex-col gap-4 border-b border-line bg-[linear-gradient(145deg,rgba(24,24,27,.8),rgba(9,12,20,.9))] p-4 sm:p-5">
+      <div className="flex flex-col gap-4 border-b border-line bg-zinc-950/70 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Twój najbliższy plan</p>
@@ -758,32 +725,6 @@ function PendingConfirmationsCard({
   );
 }
 
-function WeeklySummaryCard({ eyebrow, title, range, hours, classes, schools, instructors, streak }: { eyebrow: string; title: string; range: string; hours: number; classes: number; schools: number; instructors: number; streak: number }) {
-  const progress = Math.min(100, Math.round((hours / 8) * 100));
-  return (
-    <section className="rounded-2xl border border-line bg-zinc-900/45 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet">{eyebrow}</p>
-          <h2 className="mt-1 font-heading text-lg font-semibold text-zinc-50">{title}</h2>
-          <p className="mt-0.5 text-xs text-muted">{range}</p>
-        </div>
-        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full" style={{ background: `conic-gradient(#9c4dff ${progress}%, #272b36 ${progress}% 100%)` }}>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#11141d] text-center">
-            <span className="font-heading text-sm font-semibold text-zinc-100">{formatHours(hours)} h</span>
-          </div>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {[{ value: classes, label: pluralizeClasses(classes) }, { value: schools, label: pluralizeSchools(schools) }, { value: instructors, label: instructors === 1 ? "instruktor" : "instruktorów" }].map((item) => (
-          <div key={item.label} className="rounded-lg bg-zinc-950/60 px-2 py-2.5 text-center"><p className="font-heading text-lg font-semibold text-zinc-100">{item.value}</p><p className="text-[10px] text-muted">{item.label}</p></div>
-        ))}
-      </div>
-      {streak > 0 && <p className="mt-3 text-xs font-medium text-accent">🔥 {streak} {pluralizeWeeks(streak)} z rzędu</p>}
-    </section>
-  );
-}
-
 function FavoriteClassesSection({ favorites, plannedClassIds, onPlan, onLike, now, onOpenClass }: { favorites: ReturnType<typeof nextOccurrences>; plannedClassIds: Set<string>; onPlan: (id: string) => void; onLike: (id: string) => void; now: Date; onOpenClass: (row: ClassRow) => void }) {
   return (
     <section id="ulubione" className="scroll-mt-20">
@@ -917,15 +858,3 @@ function RecommendedClassesSection({ recommendations, activeFilter, onFilter, pl
   );
 }
 
-function DashboardStatsSection({ totalClasses, totalHours, schools, instructors, streak, monthCount, attendedEvents }: { totalClasses: number; totalHours: number; schools: number; instructors: number; streak: number; monthCount: number; attendedEvents: number }) {
-  return (
-    <section>
-      <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">Twój progres</p><h2 className="mt-1 font-heading text-xl font-semibold text-zinc-50">Twoje statystyki</h2></div><Link href="/podsumowanie" className="text-xs font-semibold text-accent hover:text-accent-peach sm:text-sm">Zobacz podsumowanie →</Link></div>
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        {[{ value: totalClasses, label: pluralizeClasses(totalClasses), note: monthCount > 0 ? `${monthCount} w tym miesiącu` : "Zacznij dziś" }, { value: `${totalHours} h`, label: "tańca", note: "Łączny czas" }, { value: attendedEvents, label: pluralizeEvents(attendedEvents), note: "Zaliczonych" }, { value: schools, label: pluralizeSchools(schools), note: "Odwiedzonych" }, { value: instructors, label: "instruktorów", note: "Poznanych" }, { value: streak, label: `${pluralizeWeeks(streak)} z rzędu`, note: streak > 0 ? "🔥 Trzymaj rytm" : "Pierwsza passa czeka" }].map((item) => (
-          <div key={item.label} className="rounded-2xl border border-line bg-zinc-900/45 p-4"><p className="font-heading text-2xl font-semibold text-zinc-50">{item.value}</p><p className="mt-1 text-xs font-medium text-zinc-300">{item.label}</p><p className="mt-3 text-[10px] text-muted">{item.note}</p></div>
-        ))}
-      </div>
-    </section>
-  );
-}

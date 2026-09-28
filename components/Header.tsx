@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { SearchIcon, CalendarIcon, ChevronDownIcon, PersonIcon, MenuIcon } from "@/components/icons";
@@ -164,6 +165,7 @@ export function Header() {
               </Link>
             );
           })}
+          <div className="mt-1 flex items-center justify-between gap-2 border-t border-line px-3 pt-3 pb-1"><span className="text-xs text-muted">Motyw</span><ThemeToggle /></div>
         </nav>
       )}
     </header>
@@ -179,6 +181,7 @@ function UserMenuLinks() {
       <Link href="/#ulubione" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Ulubione</Link>
       <Link href="/podsumowanie" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Statystyki</Link>
       <div className="my-1 border-t border-line" />
+      <div className="flex items-center justify-between gap-2 px-3 py-2"><span className="text-xs text-muted">Motyw</span><ThemeToggle /></div>
       <Link href="/konto" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Profil i ustawienia</Link>
     </>
   );

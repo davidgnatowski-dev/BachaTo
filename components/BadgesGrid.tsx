@@ -9,7 +9,7 @@ export function BadgesGrid({ badges, compact = false }: { badges: Badge[]; compa
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Odznaki</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Odznaki</p>
         <p className="text-xs text-muted">{earned.length} / {badges.length}</p>
       </div>
       <div className={`mt-3 grid ${compact ? "grid-cols-2 gap-2" : "grid-cols-2 gap-2.5 sm:grid-cols-3"}`}>
@@ -19,7 +19,7 @@ export function BadgesGrid({ badges, compact = false }: { badges: Badge[]; compa
             title={`${badge.label} — ${badge.description}`}
             className={`min-w-0 rounded-xl border ${compact ? "flex items-center gap-2 p-2.5 text-left" : "flex flex-col items-center gap-1 p-3 text-center"} ${
               badge.earned
-                ? "border-violet/50 bg-gradient-to-br from-violet/15 to-violet/5"
+                ? "border-zinc-600 bg-zinc-800/60"
                 : "border-line bg-zinc-950/40 opacity-60"
             }`}
           >

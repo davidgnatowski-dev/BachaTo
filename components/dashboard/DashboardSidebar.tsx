@@ -56,7 +56,7 @@ export function DashboardSidebar({ streak, active = "start" }: { streak?: number
   const pathname = usePathname();
   const onHashNavClick = useHashNavClick(pathname);
   return (
-    <aside className="sticky top-0 hidden h-[calc(100vh-65px)] w-56 shrink-0 flex-col border-r border-line/80 bg-[#0d1019] px-3 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-[calc(100vh-65px)] w-56 shrink-0 flex-col border-r border-line/80 bg-surface px-3 py-5 lg:flex">
       <nav className="flex flex-col gap-1" aria-label="Nawigacja dashboardu">
         {items.map((item) => {
           const Icon = item.icon;

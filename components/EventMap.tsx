@@ -202,13 +202,13 @@ export function EventMap({ rows }: { rows: EventRow[] }) {
           <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" aria-label="Interaktywna mapa wydarzeń" />
           {!ready && <div className="absolute inset-0 flex items-center justify-center bg-zinc-950 text-sm text-muted">Ładuję mapę…</div>}
           <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/15 bg-zinc-950/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur">{mapRows.length} wydarzeń na mapie</span>
+            <span className="rounded-full border border-line bg-zinc-950/90 px-3 py-1.5 text-xs font-semibold text-zinc-50 shadow-lg backdrop-blur">{mapRows.length} wydarzeń na mapie</span>
             {Object.entries(CATEGORY_COLORS).map(([category, color]) => <span key={category} className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-zinc-950/85 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-200 backdrop-blur sm:inline-flex"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />{CATEGORY_LABELS[category as EventRow["category"]]}</span>)}
           </div>
           {pendingKeys && !sameIds(pendingKeys, visibleKeys) && <button type="button" onClick={() => { setVisibleKeys(pendingKeys); setPendingKeys(null); }} className="absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white shadow-xl hover:bg-accent-dark sm:top-4">Szukaj w tym miejscu · {pendingKeys.length}</button>}
         </div>
 
-        <aside className="flex min-h-0 flex-col border-t border-line bg-[#0d1019] lg:max-h-[660px] lg:border-l lg:border-t-0">
+        <aside className="flex min-h-0 flex-col border-t border-line bg-surface lg:max-h-[660px] lg:border-l lg:border-t-0">
           <div className="border-b border-line p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Widoczny obszar</p>
             <div className="mt-1 flex items-end justify-between gap-3"><h2 className="font-heading text-lg font-semibold text-zinc-50">{visibleRows.length} {visibleRows.length === 1 ? "wydarzenie" : "wydarzeń"}</h2>{visibleRows.length !== mapRows.length && <button type="button" onClick={() => { mapRef.current?.fitBounds(POLAND_BOUNDS, { padding: 34, duration: 500 }); setVisibleKeys(mapRows.map(eventKey)); setPendingKeys(null); }} className="text-xs font-semibold text-accent">Pokaż całą Polskę</button>}</div>

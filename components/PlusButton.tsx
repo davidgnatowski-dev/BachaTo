@@ -72,7 +72,7 @@ export function PlusButton({
           ? "border-accent bg-accent text-white hover:bg-accent-dark"
           : active
             ? "border-violet/60 bg-violet/20 text-violet"
-            : "border-white/20 bg-black/40 text-white/80 hover:text-white"
+            : "border-line bg-zinc-950/70 text-zinc-200 hover:text-zinc-50"
       } ${className ?? ""}`}
     >
       {icon}

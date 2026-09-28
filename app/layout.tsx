@@ -3,6 +3,7 @@ import { Poppins, Inter } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { getStats } from "@/lib/db";
 import { AuthenticatedAppShell } from "@/components/dashboard/AuthenticatedAppShell";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -37,6 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${poppins.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background font-sans text-foreground" suppressHydrationWarning>
         <div className="flex-1"><AuthenticatedAppShell>{children}</AuthenticatedAppShell></div>
         <Footer stats={stats} />

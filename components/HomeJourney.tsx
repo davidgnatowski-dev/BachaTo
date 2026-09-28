@@ -50,13 +50,13 @@ export function HomeJourney() {
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-200 sm:text-base">Znajdź zajęcia i wydarzenia, zapisz własny plan, ucz się z krótkich lekcji i ćwicz do gotowych playlist bachaty.</p>
           <div className="mt-4 flex max-w-xl flex-wrap gap-2" aria-label="Funkcje BachaTo">
-            {['Grafik zajęć', 'Wydarzenia', 'Mój plan', 'Statystyki', 'Nauka online', 'Playlisty'].map((feature) => <span key={feature} className="rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-[10px] font-semibold text-zinc-200 backdrop-blur-sm sm:text-xs">{feature}</span>)}
+            {['Grafik zajęć', 'Wydarzenia', 'Mój plan', 'Statystyki', 'Nauka online', 'Playlisty'].map((feature) => <span key={feature} className="rounded-full on-photo border border-white/15 bg-black/30 px-3 py-1.5 text-[10px] font-semibold text-zinc-200 backdrop-blur-sm sm:text-xs">{feature}</span>)}
           </div>
           <div className="mt-6 flex flex-col gap-3 min-[390px]:flex-row">
             <Link href="/grafik" className="inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-6 text-sm font-semibold text-white shadow-[0_0_28px_rgba(255,106,24,.28)] transition hover:bg-accent-dark focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">
               Odkryj zajęcia <span aria-hidden="true" className="ml-2">→</span>
             </Link>
-            <a href="#jak-to-dziala" className="inline-flex min-h-12 items-center justify-center rounded-full border border-zinc-500/70 bg-black/25 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+            <a href="#jak-to-dziala" className="inline-flex min-h-12 items-center justify-center rounded-full on-photo border border-zinc-500/70 bg-black/25 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
               <span aria-hidden="true" className="mr-2 flex h-7 w-7 items-center justify-center rounded-full border border-accent text-[10px] text-accent">▶</span>
               Zobacz, jak to działa
             </a>

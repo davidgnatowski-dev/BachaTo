@@ -1,5 +1,8 @@
 "use client";
 
+import { formatDecimal } from "@/lib/format";
+import { pluralizeClasses } from "@/lib/schedule";
+import { pluralizeEvents } from "@/lib/events";
 import { useState } from "react";
 
 interface YearSummaryProps {
@@ -45,12 +48,12 @@ function createStoryImage({ year, classes, hours, events, practice, school, inst
   context.fillText("w tańcu", 86, 410);
   context.fillStyle = "#b9b5c7";
   context.font = "400 34px Arial, sans-serif";
-  context.fillText("Ruch, muzyka i ludzie — zapisane w jednym miejscu.", 86, 485);
+  context.fillText("Ruch, muzyka i ludzie, zapisane w jednym miejscu.", 86, 485);
 
   const stats = [
-    { value: String(classes), label: "ZAJĘĆ" },
-    { value: `${hours} h`, label: "TAŃCA" },
-    { value: String(events), label: "WYDARZEŃ" },
+    { value: String(classes), label: pluralizeClasses(classes).toUpperCase() },
+    { value: `${formatDecimal(hours)} h`, label: "TAŃCA" },
+    { value: String(events), label: pluralizeEvents(events).toUpperCase() },
     { value: String(practice), label: "PRAKTYK TANECZNYCH" },
   ];
   stats.forEach((stat, index) => {
@@ -115,19 +118,19 @@ export function YearSummaryCard(props: YearSummaryProps) {
   }
 
   const items = [
-    { value: classes, label: "zajęć" },
-    { value: `${hours} h`, label: "tańca" },
-    { value: events, label: "wydarzeń" },
+    { value: classes, label: pluralizeClasses(classes) },
+    { value: `${formatDecimal(hours)} h`, label: "tańca" },
+    { value: events, label: pluralizeEvents(events) },
     { value: practice, label: "praktyk tanecznych" },
     { value: school || "—", label: "najczęstsza szkoła" },
     { value: instructor || style || "—", label: instructor ? "najczęstszy instruktor" : "ulubiony styl" },
   ];
 
-  return <section className="relative overflow-hidden rounded-2xl border border-violet/30 bg-gradient-to-br from-violet/20 via-zinc-900/80 to-accent/10 p-5 sm:p-6">
-    <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-violet/15 blur-2xl" />
+  return <section className="relative overflow-hidden rounded-2xl border border-line bg-zinc-900/45 p-5 sm:p-6">
+    
     <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-      <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet">BachaTo Wrapped {year}</p><h2 className="mt-1 font-heading text-2xl font-semibold text-zinc-50">Twój rok w tańcu</h2><p className="mt-2 text-sm text-zinc-300">{classes + events > 0 ? "Podsumowanie rośnie po każdym potwierdzonym treningu i wydarzeniu." : "Potwierdź pierwszą aktywność, a zaczniemy budować Twoją historię."}</p></div>
-      <button type="button" onClick={share} disabled={status === "working"} className="shrink-0 rounded-full border border-violet/50 bg-violet/10 px-4 py-2 text-xs font-semibold text-violet hover:bg-violet/20 disabled:opacity-60">{status === "working" ? "Tworzę grafikę…" : status === "done" ? "Grafika gotowa ✓" : "Udostępnij jako relację"}</button>
+      <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">BachaTo Wrapped {year}</p><h2 className="mt-1 font-heading text-2xl font-semibold text-zinc-50">Twój rok w tańcu</h2><p className="mt-2 text-sm text-zinc-300">{classes + events > 0 ? "Podsumowanie rośnie po każdym potwierdzonym treningu i wydarzeniu." : "Potwierdź pierwszą aktywność, a zaczniemy budować Twoją historię."}</p></div>
+      <button type="button" onClick={share} disabled={status === "working"} className="shrink-0 rounded-full border border-line px-4 py-2 text-xs font-semibold text-zinc-200 hover:border-zinc-500 disabled:opacity-60">{status === "working" ? "Tworzę grafikę…" : status === "done" ? "Grafika gotowa ✓" : "Udostępnij jako relację"}</button>
     </div>
     <div className="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
       {items.map((item) => <div key={item.label} className="rounded-xl border border-white/5 bg-black/20 p-3"><p className="truncate font-heading text-lg font-semibold text-zinc-50">{item.value}</p><p className="mt-1 text-[10px] text-zinc-400">{item.label}</p></div>)}

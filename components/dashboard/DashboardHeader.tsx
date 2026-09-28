@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ChevronDownIcon, PersonIcon, PinIcon, SearchIcon } from "@/components/icons";
 import { NotificationBell } from "@/components/NotificationBell";
 import { SearchAutocomplete } from "@/components/SearchAutocomplete";
 
 export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string; avatarEmoji: string | null; avatarUrl: string | null }) {
   return (
-    <header className="flex min-h-16 items-center gap-3 border-b border-line/80 bg-[#0b0e16]/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
+    <header className="flex min-h-16 items-center gap-3 border-b border-line/80 bg-background/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
       <Link href="/" className="shrink-0" aria-label="BachaTo — strona główna">
         <Image src="/brand/logo-v4.png" alt="BachaTo" width={1254} height={1254} priority className="h-14 w-auto" />
       </Link>
@@ -50,6 +51,7 @@ export function DashboardHeader({ name, avatarEmoji, avatarUrl }: { name: string
             <Link href="/nauka" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Nauka</Link>
             <Link href="/muzyka" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Muzyka</Link>
             <div className="my-1 border-t border-line" />
+            <div className="flex items-center justify-between gap-2 px-3 py-2"><span className="text-xs text-muted">Motyw</span><ThemeToggle /></div>
             <Link href="/konto" className="block rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50">Profil i ustawienia</Link>
           </div>
         </details>

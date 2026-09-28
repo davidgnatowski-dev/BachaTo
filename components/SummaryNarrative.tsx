@@ -1,3 +1,4 @@
+import { formatDecimal } from "@/lib/format";
 /**
  * A short, warm, slightly cheeky recap sentence-or-three built from the
  * user's own confirmed stats. Pure/presentational — same on the server
@@ -36,7 +37,7 @@ function aktywnosciPl(n: number) {
 
 function tierLine(hours: number): string {
   if (hours < 3) return "Rozgrzewka. Nogi jeszcze się dziwią, ale głowa już łapie, o co chodzi.";
-  if (hours < 12) return "Fundamenty się kładą — podstawowy krok masz w małym palcu, teraz kolej na biodra.";
+  if (hours < 12) return "Fundamenty się kładą. Podstawowy krok masz w małym palcu, teraz kolej na biodra.";
   if (hours < 30) return "Widać robotę. Na socialu wchodzisz na parkiet bez głębokiego wdechu.";
   if (hours < 80) return "Solidny średniak. Ludzie zaczynają Cię prosić do tańca, a nie tylko z grzeczności.";
   if (hours < 200) return "Zaawansowanie w drodze. Twoje ochos budzą ciche „oooo” w kącie sali.";
@@ -60,10 +61,10 @@ export function SummaryNarrative({
 }) {
   if (totalActivities === 0) {
     return (
-      <section className="rounded-2xl border border-violet/25 bg-gradient-to-br from-violet/10 via-zinc-900/60 to-accent/5 p-5 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">Twoja historia</p>
+      <section className="rounded-2xl border border-line bg-zinc-900/45 p-5 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Twoja historia</p>
         <p className="mt-2 text-sm leading-7 text-zinc-200">
-          Jeszcze pusto — potwierdź pierwsze zajęcia, a ułożymy z tego opowieść. I policzymy, ile godzin dzieli Cię od
+          Jeszcze pusto. Potwierdź pierwsze zajęcia, a ułożymy z tego opowieść. I policzymy, ile godzin dzieli Cię od
           bachatowego mistrzostwa. Spoiler: trochę tego jest.
         </p>
       </section>
@@ -75,25 +76,25 @@ export function SummaryNarrative({
   const yearsAtPace = Math.max(1, Math.round(remaining / 3 / 52));
 
   const instructorBit = favoriteInstructor
-    ? `Twój ulubiony prowadzący to ${favoriteInstructor}${favoriteSchool ? ` (${favoriteSchool})` : ""} — ktoś tu ma swojego faworyta. `
+    ? `Twój ulubiony prowadzący to ${favoriteInstructor}${favoriteSchool ? ` (${favoriteSchool})` : ""}. Ktoś tu ma swojego faworyta. `
     : favoriteSchool
       ? `Najwięcej czasu spędzasz w: ${favoriteSchool}. `
       : "";
 
-  const streakBit = streak >= 2 ? ` Passa ${streak} ${tygodniePl(streak)} z rzędu — nie przerywaj, parkiet pamięta. ` : "";
+  const streakBit = streak >= 2 ? ` Passa ${streak} ${tygodniePl(streak)} z rzędu, nie przerywaj, parkiet pamięta. ` : "";
 
   const masteryBit =
     remaining <= 0
-      ? "Teoria mówi, że do mistrzostwa trzeba 10 000 godzin. Masz je z zapasem — teraz to Ty jesteś teorią."
-      : `Sławna teoria 10 000 godzin do mistrzostwa mówi, że brakuje Ci jeszcze ${pl(remaining)} h — przy trzech wieczorach tygodniowo jakieś ${yearsAtPace} ${lataPl(yearsAtPace)}. Osoba, która to wyliczyła, chyba nigdy nie została na socialu do 3 w nocy. Na szczęście liczy się droga, nie licznik.`;
+      ? "Teoria mówi, że do mistrzostwa trzeba 10 000 godzin. Masz je z zapasem, teraz to Ty jesteś teorią."
+      : `Sławna teoria 10 000 godzin do mistrzostwa mówi, że brakuje Ci jeszcze ${pl(remaining)} h, przy trzech wieczorach tygodniowo jakieś ${yearsAtPace} ${lataPl(yearsAtPace)}. Osoba, która to wyliczyła, chyba nigdy nie została na socialu do 3 w nocy. Na szczęście liczy się droga, nie licznik.`;
 
   return (
-    <section className="rounded-2xl border border-violet/25 bg-gradient-to-br from-violet/10 via-zinc-900/60 to-accent/5 p-5 sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet">Twoja historia</p>
+    <section className="rounded-2xl border border-line bg-zinc-900/45 p-5 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Twoja historia</p>
       <p className="mt-2 text-sm leading-7 text-zinc-200">
         Masz na koncie <span className="font-semibold text-zinc-50">{totalActivities}</span>{" "}
-        {aktywnosciPl(totalActivities)} —
-        to <span className="font-semibold text-zinc-50">{pl(totalHours)} h</span> na parkiecie. {instructorBit}
+        {aktywnosciPl(totalActivities)}, czyli{" "}
+        <span className="font-semibold text-zinc-50">{formatDecimal(totalHours)} h</span> na parkiecie. {instructorBit}
         {tierLine(totalHours)}
         {streakBit}
       </p>

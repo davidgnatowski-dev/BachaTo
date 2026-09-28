@@ -1,3 +1,4 @@
+import { formatDecimal } from "@/lib/format";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getRecentPlannedEvents, getUserActivity, getUserEventActivity, getUserEventProgramActivity, getUserFavorites, type UserFavoriteRow } from "@/lib/db";
@@ -5,7 +6,7 @@ import { computeActivityStats, confirmedActivityOnly } from "@/lib/activityStats
 import { computeBadges, weekStreak, DEFAULT_WEEKLY_GOAL } from "@/lib/badges";
 import { BadgesGrid } from "@/components/BadgesGrid";
 import { SummaryNarrative } from "@/components/SummaryNarrative";
-import { CATEGORY_LABELS, eventHref, isDancePracticeEvent } from "@/lib/events";
+import { CATEGORY_LABELS, eventHref, isDancePracticeEvent, pluralizeEvents } from "@/lib/events";
 import { classifyLevel, levelStyle, LEVEL_BUCKET_ICONS } from "@/lib/level";
 import { Header } from "@/components/Header";
 import { LocalStatsSummary } from "@/components/LocalStatsSummary";
@@ -38,7 +39,7 @@ export default async function PodsumowaniePage() {
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-zinc-50">Twoje podsumowanie</h1>
           <p className="mt-1 text-sm text-muted">
-            Zajęcia, wydarzenia i praktyka taneczna w jednym miejscu — liczone z aktywności, które potwierdzisz po ich rozpoczęciu.
+            Zajęcia, wydarzenia i praktyka taneczna w jednym miejscu, liczone z aktywności, które potwierdzisz po ich rozpoczęciu.
           </p>
         </div>
         <Link
@@ -137,14 +138,14 @@ async function AccountStats({ userId }: { userId: number }) {
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted">Łącznie w historii</p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         {[
-          { label: "Godziny tańca", value: stats.totalHours },
-          { label: "Godziny warsztatów", value: workshopHours },
+          { label: "Godziny tańca", value: formatDecimal(stats.totalHours) },
+          { label: "Godziny warsztatów", value: formatDecimal(workshopHours) },
           { label: "Odbyte zajęcia", value: stats.totalClasses },
           { label: "Ten miesiąc", value: stats.thisMonthCount },
           { label: "Ten tydzień", value: stats.thisWeekCount },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-line bg-zinc-900/60 p-4 text-center">
-            <p className="font-heading text-2xl font-bold text-accent">{stat.value}</p>
+            <p className="font-heading text-2xl font-bold text-zinc-50">{stat.value}</p>
             <p className="mt-1 text-xs text-muted">{stat.label}</p>
           </div>
         ))}
@@ -153,7 +154,7 @@ async function AccountStats({ userId }: { userId: number }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-line bg-zinc-900/45 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Cel tygodnia</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Cel tygodnia</p>
           <div className="mt-2 flex items-end gap-2">
             <span className="font-heading text-3xl font-bold text-zinc-50">{goalDone}</span>
             <span className="pb-1 text-sm text-muted">/ {DEFAULT_WEEKLY_GOAL} aktywności</span>
@@ -169,15 +170,15 @@ async function AccountStats({ userId }: { userId: number }) {
           </p>
         </div>
         <div className="rounded-2xl border border-line bg-zinc-900/45 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Ten miesiąc · {monthLabel}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Ten miesiąc · {monthLabel}</p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             {[
-              { value: monthStats.totalClasses, label: "aktywności" },
-              { value: monthStats.totalHours, label: "godzin" },
-              { value: monthEventCount, label: "wydarzeń" },
+              { value: monthStats.totalClasses, label: monthStats.totalClasses === 1 ? "aktywność" : "aktywności" },
+              { value: formatDecimal(monthStats.totalHours), label: "godzin" },
+              { value: monthEventCount, label: pluralizeEvents(monthEventCount) },
             ].map((s) => (
               <div key={s.label} className="rounded-lg bg-zinc-950/50 p-2.5">
-                <p className="font-heading text-xl font-bold text-accent">{s.value}</p>
+                <p className="font-heading text-xl font-bold text-zinc-50">{s.value}</p>
                 <p className="mt-0.5 text-[10px] text-muted">{s.label}</p>
               </div>
             ))}
@@ -197,7 +198,7 @@ async function AccountStats({ userId }: { userId: number }) {
           {stats.favoriteInstructor && (
             <Link
               href={`/instruktorzy/${encodeURIComponent(stats.favoriteInstructor)}`}
-              className="rounded-full border border-violet/40 bg-violet/10 px-3 py-1.5 text-xs font-semibold text-violet hover:bg-violet/20"
+              className="rounded-full border border-line bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-zinc-500"
             >
               Ulubiony instruktor: {stats.favoriteInstructor}
             </Link>
@@ -212,7 +213,7 @@ async function AccountStats({ userId }: { userId: number }) {
           )}
           {stats.favoriteLevel && levelColors && (
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${levelColors.bg} ${levelColors.text} ${levelColors.ring}`}
+              className="inline-flex items-center gap-1 rounded-full border border-line bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200"
             >
               <span aria-hidden="true">{levelBucket ? LEVEL_BUCKET_ICONS[levelBucket] : ""}</span>
               Najczęstszy poziom: {stats.favoriteLevel}
@@ -224,7 +225,7 @@ async function AccountStats({ userId }: { userId: number }) {
       <section className="rounded-2xl border border-line bg-zinc-900/45 p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Wydarzenia</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Wydarzenia</p>
             <h2 className="mt-1 font-heading text-lg font-semibold text-zinc-50">Eventy i praktyka taneczna</h2>
           </div>
           <Link href="/eventy" className="text-xs font-semibold text-accent hover:text-accent-peach">Znajdź wydarzenie →</Link>
@@ -238,7 +239,7 @@ async function AccountStats({ userId }: { userId: number }) {
             { label: "Miasta", value: eventCities },
           ].map((stat) => (
             <div key={stat.label} className="rounded-xl border border-line bg-zinc-950/45 p-4 text-center">
-              <p className="font-heading text-2xl font-bold text-accent">{stat.value}</p>
+              <p className="font-heading text-2xl font-bold text-zinc-50">{stat.value}</p>
               <p className="mt-1 text-xs text-muted">{stat.label}</p>
             </div>
           ))}
@@ -263,7 +264,7 @@ async function AccountStats({ userId }: { userId: number }) {
 
       {programActivity.length > 0 && (
         <section className="rounded-2xl border border-line bg-zinc-900/45 p-5">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-violet">Warsztaty</p><h2 className="mt-1 font-heading text-lg font-semibold text-zinc-50">Zaliczone punkty programu</h2></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Warsztaty</p><h2 className="mt-1 font-heading text-lg font-semibold text-zinc-50">Zaliczone punkty programu</h2></div>
           <div className="mt-4 divide-y divide-line">
             {programActivity.slice(0, 10).map((entry) => (
               <div key={entry.sessionKey} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
